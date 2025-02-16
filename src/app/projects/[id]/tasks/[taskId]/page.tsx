@@ -26,6 +26,10 @@ import {
   DatabaseTimeEntry,
   DatabaseTaskResponse,
   DatabaseTeamMemberResponse,
+  Profile,
+  Project,
+  TaskStatus,
+  TaskPriority,
 } from '@/types/database.types';
 
 interface TaskDetailPageProps {
@@ -104,12 +108,13 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       if (membersError) throw membersError;
 
       // データを適切な型に変換
-      const typedTaskData = taskData as DatabaseTaskWithRelations;
-      const typedMembersData = membersData as DatabaseTeamMemberResponse[];
+      const typedTaskData = taskData as DatabaseTaskResponse;
 
       // チームメンバーデータを変換
-      const formattedMembers: TeamMemberWithProfile[] = typedMembersData
-        .filter(member => member.profiles)
+      const formattedMembers: TeamMemberWithProfile[] = (membersData || [])
+        .filter((member): member is (typeof membersData)[0] & { profiles: Profile } =>
+          Boolean(member && member.profiles)
+        )
         .map(member => ({
           id: member.id,
           team_id: member.team_id,
@@ -117,27 +122,56 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
           role: member.role,
           created_at: member.created_at,
           updated_at: member.updated_at,
-          profile: {
-            id: member.profiles.id,
-            full_name: member.profiles.full_name,
-            email: member.profiles.email,
-            avatar_url: member.profiles.avatar_url,
-            created_at: member.created_at,
-            updated_at: member.updated_at,
-          },
+          profile: member.profiles
         }));
 
       // タスクデータを変換
       const formattedTaskDetail: TaskDetail = {
-        ...typedTaskData,
+        id: typedTaskData.id,
+        title: typedTaskData.title,
+        description: typedTaskData.description,
+        status: typedTaskData.status as TaskStatus,
+        priority: typedTaskData.priority as TaskPriority,
+        project_id: typedTaskData.project_id,
+        team_id: typedTaskData.team_id,
+        assignee_id: typedTaskData.assignee_id,
+        due_date: typedTaskData.due_date,
+        created_at: typedTaskData.created_at,
+        updated_at: typedTaskData.updated_at,
+        project: {
+          id: typedTaskData.project?.id || '',
+          name: typedTaskData.project?.name || '',
+          description: typedTaskData.project?.description || null,
+          team_id: typedTaskData.team_id,
+          owner_id: '',
+          start_date: null,
+          end_date: null,
+          created_at: typedTaskData.created_at,
+          updated_at: typedTaskData.updated_at
+        },
+        assignee: typedTaskData.assignee,
         time_entries: typedTaskData.time_entries.map(entry => ({
           ...entry,
-          user: entry.user,  // 既にuser情報が含まれている
+          user: entry.user
         })) as TimeEntryWithUser[],
-        comments: typedTaskData.comments.map(comment => ({
-          ...comment,
-          author: comment.author,  // 既にauthor情報が含まれている
+        comments: (typedTaskData.comments || []).map(comment => ({
+          id: comment.id,
+          task_id: comment.task_id,
+          user_id: comment.user_id,
+          content: comment.content,
+          created_at: comment.created_at,
+          updated_at: comment.created_at,
+          author: comment.author
         })),
+        history: (typedTaskData.history || []).map(history => ({
+          id: history.id,
+          task_id: history.task_id,
+          user_id: history.user_id,
+          change_type: history.change_type,
+          previous_value: history.previous_value,
+          new_value: history.new_value,
+          created_at: history.created_at
+        }))
       };
 
       setTask(formattedTaskDetail);
