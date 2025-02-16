@@ -1,0 +1,61 @@
+{
+  "name": "Smuuze - タイムトラッキング & プロジェクト管理",
+  "short_name": "Smuuze",
+  "description": "プロジェクト単位でタスク管理とタイムトラッキングを行い、作業記録に基づいたレポートを生成する業務支援ツール",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2563EB",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ダッシュボード",
+      "url": "/dashboard",
+      "description": "作業時間の記録を開始"
+    },
+    {
+      "name": "プロジェクト",
+      "url": "/projects",
+      "description": "プロジェクト一覧を表示"
+    }
+  ],
+  "categories": [
+    "productivity",
+    "business"
+  ],
+  "lang": "ja-JP",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "scope": "/",
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "platform": "web",
+      "label": "ダッシュボード画面"
+    },
+    {
+      "src": "/screenshots/projects.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "platform": "web",
+      "label": "プロジェクト一覧画面"
+    }
+  ]
+}

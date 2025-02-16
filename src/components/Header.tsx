@@ -9,23 +9,41 @@ import {
   Stack,
   useBreakpointValue,
   Container,
-  VStack,
+  Text,
 } from '@chakra-ui/react';
 import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
 
-  const menuItems = [
+  const publicMenuItems = [
+    { name: 'ホーム', href: '/' },
+    { name: 'サービス紹介', href: '/features' },
+    { name: '料金プラン', href: '/pricing' },
+  ];
+
+  const privateMenuItems = [
     { name: 'ダッシュボード', href: '/dashboard' },
     { name: 'プロジェクト', href: '/projects' },
     { name: 'タスク', href: '/tasks' },
     { name: 'タイムシート', href: '/timesheet' },
     { name: 'レポート', href: '/reports' },
   ];
+
+  const menuItems = user ? privateMenuItems : publicMenuItems;
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <Box
@@ -103,13 +121,41 @@ export function Header() {
             direction="row"
             align="center"
           >
-            {/* プロフィールメニューは後で実装 */}
+            {user ? (
+              <Box display="flex" alignItems="center">
+                <Link href="/profile">
+                  <Button variant="ghost" mr={2}>
+                    プロフィール
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  onClick={handleSignOut}
+                >
+                  ログアウト
+                </Button>
+              </Box>
+            ) : (
+              <>
+                <Link href="/auth/signin">
+                  <Button variant="ghost">ログイン</Button>
+                </Link>
+                <Link href="/auth/signup">
+                  <Button
+                    display={{ base: 'none', md: 'inline-flex' }}
+                    colorScheme="brand"
+                  >
+                    無料で始める
+                  </Button>
+                </Link>
+              </>
+            )}
           </Stack>
         </Flex>
 
         {isOpen && (
           <Box pb={4} display={{ md: 'none' }}>
-            <VStack align="stretch">
+            <Stack>
               {menuItems.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <Button
@@ -123,7 +169,36 @@ export function Header() {
                   </Button>
                 </Link>
               ))}
-            </VStack>
+              {!user && (
+                <Link href="/auth/signup">
+                  <Button
+                    w="full"
+                    colorScheme="brand"
+                  >
+                    無料で始める
+                  </Button>
+                </Link>
+              )}
+              {user && (
+                <>
+                  <Link href="/profile">
+                    <Button
+                      w="full"
+                      variant="ghost"
+                    >
+                      プロフィール
+                    </Button>
+                  </Link>
+                  <Button
+                    w="full"
+                    variant="outline"
+                    onClick={handleSignOut}
+                  >
+                    ログアウト
+                  </Button>
+                </>
+              )}
+            </Stack>
           </Box>
         )}
       </Container>
