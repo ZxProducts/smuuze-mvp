@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -14,7 +14,6 @@ import {
   TabPanels,
   Tab,
   TabPanel,
-  Badge,
   useDisclosure,
   Divider,
   Spinner,
@@ -23,7 +22,8 @@ import {
 import { AddIcon, EditIcon } from '@chakra-ui/icons';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { dbOperations, ProjectRow, TaskRow, TimeEntryRow } from '@/lib/supabase';
+import { dbOperations } from '@/lib/supabase';
+import { Task, Project, TimeEntryWithDetails, Profile } from '@/types/database.types';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { useToastMessage } from '@/hooks/useToastMessage';
 import { ProjectEditModal } from '@/components/ProjectEditModal';
@@ -32,31 +32,24 @@ import { ProjectTimeSummary } from '@/components/ProjectTimeSummary';
 import { ProjectCharts } from '@/components/ProjectCharts';
 import { ExportMenu } from '@/components/ExportMenu';
 
-interface TimeEntryWithUser extends TimeEntryRow {
-  user: {
-    id: string;
-    full_name: string;
-  };
+interface TaskWithTimeEntries extends Task {
+  time_entries: TimeEntryWithDetails[];
+  assignees: Profile[];
 }
 
-interface TaskWithTimeEntries extends TaskRow {
-  time_entries: TimeEntryWithUser[];
+interface TaskWithAssignees extends Task {
+  assignees: Profile[];
 }
 
-interface TaskWithAssignee extends TaskRow {
-  assignee?: {
-    id: string;
-    full_name: string;
-  };
-}
-
-interface ProjectWithTasks extends ProjectRow {
-  tasks: TaskWithAssignee[];
+interface ProjectWithTasks extends Project {
+  tasks: TaskWithAssignees[];
 }
 
 export default function ProjectDetailPage() {
   const router = useRouter();
-  const params = useParams();
+  const searchParams = useParams();
+  const { id } = searchParams;
+  const projectId = id as string;
   const { loading, withLoading } = useLoadingState();
   const { showSuccess, showError } = useToastMessage();
   const [project, setProject] = useState<ProjectWithTasks | null>(null);
@@ -66,16 +59,16 @@ export default function ProjectDetailPage() {
   const [isLoadingCharts, setIsLoadingCharts] = useState(false);
 
   useEffect(() => {
-    if (params.id) {
+    if (projectId) {
       loadProject();
       loadTimeEntries();
     }
-  }, [params.id]);
+  }, [projectId]);
 
   const loadProject = async () => {
     await withLoading(async () => {
       try {
-        const data = await dbOperations.projects.getById(params.id as string);
+        const data = await dbOperations.projects.getById(projectId);
         setProject(data as ProjectWithTasks);
       } catch (error) {
         console.error('Error loading project:', error);
@@ -87,24 +80,27 @@ export default function ProjectDetailPage() {
 
   const loadTimeEntries = async () => {
     try {
-      const tasks = await dbOperations.projects.getProjectTimeEntries(params.id as string);
-      setTimeEntryTasks(tasks.map(task => ({
-        ...task,
+      const data = await dbOperations.projects.getProjectTimeEntries(projectId);
+      const tasks = data.map(entry => ({
+        id: entry.task?.id || `no-task-${entry.id}`, // タスクがない場合はtime_entryのIDを使用して一意のIDを生成
+        title: entry.task?.title || 'タスクなし',
         description: null,
-        priority: 'medium' as TaskRow['priority'],
-        assigned_to: null,
-        due_date: null,
+        project_id: entry.project_id,
+        team_id: project?.team_id || '',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        time_entries: task.time_entries || [],
-      })));
+        due_date: null,
+        assignees: [], // 空の配列として初期化
+        time_entries: [entry],
+      }));
+      setTimeEntryTasks(tasks);
     } catch (error) {
       console.error('Error loading time entries:', error);
       showError('作業時間データの読み込みに失敗しました');
     }
   };
 
-  const handleProjectUpdate = async (updates: Partial<ProjectRow>) => {
+  const handleProjectUpdate = async (updates: Partial<Project>) => {
     if (!project) return;
 
     await withLoading(async () => {
@@ -191,8 +187,8 @@ export default function ProjectDetailPage() {
               </Button>
             </HStack>
           </HStack>
-          <Text color="gray.600" mt={2}>{project.description || '説明なし'}</Text>
-          <Divider mt={4} />
+          <Text color="gray.600" mt={2} mb={4}>{project.description || '説明なし'}</Text>
+          <Divider />
         </Box>
 
         <Tabs index={activeTab} onChange={handleTabChange}>

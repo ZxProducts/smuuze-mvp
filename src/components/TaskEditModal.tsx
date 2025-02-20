@@ -16,35 +16,26 @@ import {
   Select,
   Stack,
   useToast,
+  Box,
 } from '@chakra-ui/react';
 import { supabase } from '@/lib/supabase';
 import {
   Task,
-  TaskPriority,
-  TaskStatus,
   Profile,
   TeamMemberWithProfile,
+  DatabaseTeamMemberResponse,
+  TaskAssigneeInsert,
 } from '@/types/database.types';
 import { PostgrestResponse } from '@supabase/supabase-js';
 
 interface TaskEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  task: Partial<Task>;
+  task: Partial<Task> & { assignees?: Profile[] };
   projectId: string;
   teamMembers?: TeamMemberWithProfile[];
-  onSave?: (updates: Partial<Task>) => Promise<void>;
-  onUpdate?: (updates: Partial<Task>) => Promise<void>;
-}
-
-interface DatabaseTeamMemberResponse {
-  user_id: string;
-  team_id: string;
-  profiles: {
-    id: string;
-    full_name: string;
-    email: string;
-  };
+  onSave?: (updates: Partial<Task>, assigneeIds: string[]) => Promise<void>;
+  onUpdate?: (updates: Partial<Task>, assigneeIds: string[]) => Promise<void>;
 }
 
 export function TaskEditModal({
@@ -61,11 +52,11 @@ export function TaskEditModal({
   const [taskData, setTaskData] = useState<Partial<Task>>({
     title: task.title || '',
     description: task.description || '',
-    status: task.status || 'not_started',
-    priority: task.priority || 'medium',
-    assignee_id: task.assignee_id || null,
     due_date: task.due_date || null,
   });
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(
+    task.assignees?.map(assignee => assignee.id) || []
+  );
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithProfile[]>(initialTeamMembers || []);
 
   useEffect(() => {
@@ -90,8 +81,7 @@ export function TaskEditModal({
             team_id,
             profiles (
               id,
-              full_name,
-              email
+              full_name
             )
           `)
           .eq('team_id', project.team_id) as PostgrestResponse<DatabaseTeamMemberResponse>;
@@ -107,15 +97,19 @@ export function TaskEditModal({
             team_id: member.team_id,
             user_id: member.user_id,
             role: 'member',
+            hourly_rate: 0, // デフォルト値
+            daily_work_hours: 8, // デフォルト値
+            weekly_work_days: 5, // デフォルト値
+            meeting_included: true, // デフォルト値
+            notes: null,
+            joined_at: new Date().toISOString(),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             profile: {
               id: member.profiles.id,
               full_name: member.profiles.full_name,
-              email: member.profiles.email,
-              avatar_url: null,
               created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             },
           }));
 
@@ -139,19 +133,25 @@ export function TaskEditModal({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setTaskData(prev => ({
-      ...prev,
-      [name]: value === '' ? null : value,
-    }));
+    if (name === 'assigneeIds') {
+      const options = e.target as HTMLSelectElement;
+      const selectedAssignees = Array.from(options.selectedOptions).map(option => option.value);
+      setAssigneeIds(selectedAssignees);
+    } else {
+      setTaskData(prev => ({
+        ...prev,
+        [name]: value === '' ? null : value,
+      }));
+    }
   };
 
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
       if (onSave) {
-        await onSave(taskData);
+        await onSave(taskData, assigneeIds);
       } else if (onUpdate) {
-        await onUpdate(taskData);
+        await onUpdate(taskData, assigneeIds);
       }
       onClose();
       toast({
@@ -197,45 +197,22 @@ export function TaskEditModal({
             </FormControl>
 
             <FormControl>
-              <FormLabel>ステータス</FormLabel>
-              <Select
-                name="status"
-                value={taskData.status || 'not_started'}
-                onChange={handleChange}
-              >
-                <option value="not_started">未着手</option>
-                <option value="in_progress">進行中</option>
-                <option value="completed">完了</option>
-              </Select>
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>優先度</FormLabel>
-              <Select
-                name="priority"
-                value={taskData.priority || 'medium'}
-                onChange={handleChange}
-              >
-                <option value="low">低</option>
-                <option value="medium">中</option>
-                <option value="high">高</option>
-              </Select>
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>担当者</FormLabel>
-              <Select
-                name="assignee_id"
-                value={taskData.assignee_id || ''}
-                onChange={handleChange}
-              >
-                <option value="">担当者なし</option>
-                {teamMembers.map(member => (
-                  <option key={member.profile.id} value={member.profile.id}>
-                    {member.profile.full_name}
-                  </option>
-                ))}
-              </Select>
+              <FormLabel>担当者（複数選択可能）</FormLabel>
+              <Box maxH="200px" overflowY="auto">
+                <Select
+                  name="assigneeIds"
+                  value={assigneeIds}
+                  onChange={handleChange}
+                  multiple
+                  h="auto"
+                >
+                  {teamMembers.map(member => (
+                    <option key={member.profile.id} value={member.profile.id}>
+                      {member.profile.full_name}
+                    </option>
+                  ))}
+                </Select>
+              </Box>
             </FormControl>
 
             <FormControl>

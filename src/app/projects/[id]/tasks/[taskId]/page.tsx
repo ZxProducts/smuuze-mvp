@@ -13,73 +13,174 @@ import {
   Divider,
   useDisclosure,
   useToast,
+  Wrap,
+  WrapItem,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { AuthGuard } from '@/components/AuthGuard';
 import { TaskEditModal } from '@/components/TaskEditModal';
 import { TimeEntryList } from '@/components/TimeEntryList';
+import { useTimeEntry } from '@/contexts/TimeEntryContext';
+import { TimeIcon } from '@chakra-ui/icons';
 import {
   TaskDetail,
   TeamMemberWithProfile,
-  TimeEntryWithUser,
+  TimeEntryWithDetails,
   DatabaseTimeEntry,
   DatabaseTaskResponse,
   DatabaseTeamMemberResponse,
   Profile,
   Project,
-  TaskStatus,
-  TaskPriority,
+  TaskCommentWithAuthor,
+  TaskHistory
 } from '@/types/database.types';
 
 interface TaskDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
     taskId: string;
-  };
+  }>;
 }
+
+type Params = {
+  id: string;
+  taskId: string;
+};
 
 interface DatabaseTaskWithRelations extends DatabaseTaskResponse {
   time_entries: DatabaseTimeEntry[];
 }
 
-export default function TaskDetailPage({ params }: TaskDetailPageProps) {
+interface TaskComment {
+  id: string;
+  task_id: string;
+  author_id: string;
+  comment: string;
+  created_at: string;
+  author: {
+    id: string;
+    full_name: string;
+  };
+}
+
+// タイマー制御コンポーネント
+const TimerControl: React.FC<{ task: TaskDetail }> = ({ task }) => {
+  const { activeEntry, startTimer, stopTimer, isLoading } = useTimeEntry();
+  const isCurrentTaskActive = activeEntry?.task_id === task.id;
+  const isOtherTaskActive = activeEntry && !isCurrentTaskActive;
+
+  return (
+    <Button
+      leftIcon={<TimeIcon />}
+      colorScheme={isCurrentTaskActive ? "red" : "brand"}
+      onClick={() => isCurrentTaskActive ? stopTimer() : startTimer(task.project_id, task.id)}
+      isLoading={isLoading}
+      isDisabled={isOtherTaskActive}
+    >
+      {isCurrentTaskActive ? "作業を終了" : "作業を開始"}
+    </Button>
+  );
+};
+
+export default function TaskDetailPage({ params: paramsPromise }: TaskDetailPageProps) {
   const router = useRouter();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeEntries, setTimeEntries] = useState<TimeEntryWithDetails[]>([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
+  const params = React.use(paramsPromise) as Params;
+
+  // 週の開始日と終了日を取得
+  const getWeekRange = (date: Date) => {
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    return { startOfWeek, endOfWeek };
+  };
+
+  // 作業記録を取得
+  const fetchTimeEntries = useCallback(async (targetDate: Date = currentDate) => {
+    if (!task) return;
+
+    const { startOfWeek, endOfWeek } = getWeekRange(targetDate);
+
+    try {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select(`
+          *,
+          user:profiles(id, full_name)
+        `)
+        .eq('task_id', task.id)
+        .gte('start_time', startOfWeek.toISOString())
+        .lte('start_time', endOfWeek.toISOString())
+        .order('start_time', { ascending: false });
+
+      if (error) throw error;
+      setTimeEntries(data as TimeEntryWithDetails[]);
+    } catch (error) {
+      console.error('Error fetching time entries:', error);
+      toast({
+        title: '作業記録の取得に失敗しました',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  }, [task, currentDate, toast]);
 
   const fetchTaskDetails = useCallback(async () => {
     try {
-      // タスクの詳細を取得
+      // タスクの詳細と担当者情報を取得
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
         .select(`
           *,
-          project:project_id (*),
-          assignee:assignee_id (
+          project:project_id (
             id,
-            full_name,
-            email,
-            avatar_url
+            name,
+            description
           ),
-          time_entries (
-            *,
-            user:user_id (
+          task_assignees (
+            user_id,
+            profiles:user_id (
               id,
               full_name
             )
           ),
           comments:task_comments (
-            *,
-            author:user_id (
+            id,
+            task_id,
+            author_id,
+            comment,
+            created_at,
+            author:author_id (
               id,
               full_name
             )
           ),
-          history:task_history (*)
+          history:task_history (
+            id,
+            task_id,
+            changed_by,
+            change_type,
+            old_value,
+            new_value,
+            changed_at,
+            author:changed_by (
+              id,
+              full_name
+            )
+          )
         `)
         .eq('id', params.taskId)
         .single();
@@ -94,83 +195,82 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
           team_id,
           user_id,
           role,
-          created_at,
-          updated_at,
-          profiles:user_id (
+          profiles!user_id (
             id,
-            full_name,
-            email,
-            avatar_url
+            full_name
           )
         `)
         .eq('team_id', taskData.team_id);
 
       if (membersError) throw membersError;
 
-      // データを適切な型に変換
-      const typedTaskData = taskData as DatabaseTaskResponse;
-
       // チームメンバーデータを変換
-      const formattedMembers: TeamMemberWithProfile[] = (membersData || [])
-        .filter((member): member is (typeof membersData)[0] & { profiles: Profile } =>
-          Boolean(member && member.profiles)
-        )
-        .map(member => ({
-          id: member.id,
-          team_id: member.team_id,
-          user_id: member.user_id,
-          role: member.role,
-          created_at: member.created_at,
-          updated_at: member.updated_at,
-          profile: member.profiles
-        }));
+      const formattedMembers: TeamMemberWithProfile[] = [];
+      (membersData as Array<DatabaseTeamMemberResponse & { profiles: any }>).forEach(member => {
+        if (member && member.profiles) {
+          const profileData = member.profiles;
+          const profile: Profile = {
+            id: profileData.id || '',
+            full_name: profileData.full_name || '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+
+          formattedMembers.push({
+            id: member.id,
+            team_id: member.team_id,
+            user_id: member.user_id,
+            role: member.role,
+            hourly_rate: 0,
+            daily_work_hours: 8,
+            weekly_work_days: 5,
+            meeting_included: true,
+            notes: null,
+            joined_at: new Date().toISOString(),
+            profile
+          });
+        }
+      });
 
       // タスクデータを変換
       const formattedTaskDetail: TaskDetail = {
-        id: typedTaskData.id,
-        title: typedTaskData.title,
-        description: typedTaskData.description,
-        status: typedTaskData.status as TaskStatus,
-        priority: typedTaskData.priority as TaskPriority,
-        project_id: typedTaskData.project_id,
-        team_id: typedTaskData.team_id,
-        assignee_id: typedTaskData.assignee_id,
-        due_date: typedTaskData.due_date,
-        created_at: typedTaskData.created_at,
-        updated_at: typedTaskData.updated_at,
+        ...taskData,
+        assignees: taskData.task_assignees?.map((ta: any) => ({
+          id: ta.profiles.id,
+          full_name: ta.profiles.full_name,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })) || [],
         project: {
-          id: typedTaskData.project?.id || '',
-          name: typedTaskData.project?.name || '',
-          description: typedTaskData.project?.description || null,
-          team_id: typedTaskData.team_id,
-          owner_id: '',
+          id: taskData.project?.id || '',
+          name: taskData.project?.name || '',
+          description: taskData.project?.description || null,
+          team_id: taskData.team_id,
+          created_by: taskData.team_id,
           start_date: null,
           end_date: null,
-          created_at: typedTaskData.created_at,
-          updated_at: typedTaskData.updated_at
+          created_at: taskData.created_at,
+          updated_at: taskData.updated_at
         },
-        assignee: typedTaskData.assignee,
-        time_entries: typedTaskData.time_entries.map(entry => ({
-          ...entry,
-          user: entry.user
-        })) as TimeEntryWithUser[],
-        comments: (typedTaskData.comments || []).map(comment => ({
+        time_entries: [], // 空の配列を設定（timeEntriesステートで管理）
+        comments: (taskData.comments || []).map((comment: TaskComment) => ({
           id: comment.id,
           task_id: comment.task_id,
-          user_id: comment.user_id,
-          content: comment.content,
+          author_id: comment.author_id,
+          content: comment.comment,
           created_at: comment.created_at,
           updated_at: comment.created_at,
           author: comment.author
         })),
-        history: (typedTaskData.history || []).map(history => ({
+        history: (taskData.history || []).map((history: DatabaseTaskResponse['history'][0]): TaskHistory => ({
           id: history.id,
           task_id: history.task_id,
-          user_id: history.user_id,
+          changed_by: history.changed_by,
           change_type: history.change_type,
-          previous_value: history.previous_value,
+          old_value: history.old_value,
           new_value: history.new_value,
-          created_at: history.created_at
+          changed_at: history.changed_at,
+          author: history.author
         }))
       };
 
@@ -192,17 +292,47 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
     fetchTaskDetails();
   }, [fetchTaskDetails]);
 
-  const handleTaskUpdate = async (updates: Partial<TaskDetail>) => {
+  // currentDateが変更されたときにtime_entriesを再取得
+  useEffect(() => {
+    if (task) {
+      fetchTimeEntries(currentDate);
+    }
+  }, [currentDate, task, fetchTimeEntries]);
+
+  const handleTaskUpdate = async (updates: Partial<TaskDetail>, assigneeIds: string[]) => {
     try {
-      const { error } = await supabase
+      // タスクの基本情報を更新
+      const { error: taskError } = await supabase
         .from('tasks')
         .update(updates)
         .eq('id', params.taskId);
 
-      if (error) throw error;
+      if (taskError) throw taskError;
 
-      // 状態を更新
-      setTask(prev => prev ? { ...prev, ...updates } : null);
+      // 現在の担当者を削除
+      const { error: deleteError } = await supabase
+        .from('task_assignees')
+        .delete()
+        .eq('task_id', params.taskId);
+
+      if (deleteError) throw deleteError;
+
+      // 新しい担当者を登録
+      if (assigneeIds.length > 0) {
+        const assigneeData = assigneeIds.map(userId => ({
+          task_id: params.taskId,
+          user_id: userId
+        }));
+
+        const { error: insertError } = await supabase
+          .from('task_assignees')
+          .insert(assigneeData);
+
+        if (insertError) throw insertError;
+      }
+
+      // 状態を更新（再取得）
+      await fetchTaskDetails();
 
       toast({
         title: 'タスクを更新しました',
@@ -241,48 +371,38 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 プロジェクト: {task.project?.name}
               </Text>
             </Box>
-            <Button onClick={onOpen}>編集</Button>
+            <HStack spacing={2}>
+              <TimerControl task={task} />
+              <Button onClick={onOpen}>編集</Button>
+            </HStack>
           </HStack>
 
           <Box>
-            <HStack spacing={4} mb={4}>
-              <Badge
-                colorScheme={
-                  task.status === 'completed'
-                    ? 'green'
-                    : task.status === 'in_progress'
-                    ? 'blue'
-                    : 'gray'
-                }
-              >
-                {task.status === 'completed'
-                  ? '完了'
-                  : task.status === 'in_progress'
-                  ? '進行中'
-                  : '未着手'}
-              </Badge>
-              <Badge
-                colorScheme={
-                  task.priority === 'high'
-                    ? 'red'
-                    : task.priority === 'medium'
-                    ? 'yellow'
-                    : 'gray'
-                }
-              >
-                優先度: {
-                  task.priority === 'high'
-                    ? '高'
-                    : task.priority === 'medium'
-                    ? '中'
-                    : '低'
-                }
-              </Badge>
+            <VStack align="stretch" spacing={4}>
+              <Box>
+                <Text fontWeight="bold" mb={2}>担当者:</Text>
+                <Wrap>
+                  {task.assignees.map(assignee => (
+                    <WrapItem key={assignee.id}>
+                      <Badge colorScheme="blue">
+                        {assignee.full_name}
+                      </Badge>
+                    </WrapItem>
+                  ))}
+                  {task.assignees.length === 0 && (
+                    <WrapItem>
+                      <Badge colorScheme="gray">未割り当て</Badge>
+                    </WrapItem>
+                  )}
+                </Wrap>
+              </Box>
               {task.due_date && (
-                <Badge>期限: {new Date(task.due_date).toLocaleDateString()}</Badge>
+                <Badge alignSelf="flex-start">
+                  期限: {new Date(task.due_date).toLocaleDateString()}
+                </Badge>
               )}
-            </HStack>
-            <Text>{task.description}</Text>
+              <Text whiteSpace="pre-wrap">{task.description}</Text>
+            </VStack>
           </Box>
 
           <Divider />
@@ -290,10 +410,13 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
           <Box>
             <Heading size="md" mb={4}>作業時間記録</Heading>
             <TimeEntryList
-              entries={task.time_entries as TimeEntryWithUser[]}
+              entries={timeEntries}
               taskId={task.id}
               projectId={task.project_id}
-              onEntryChange={fetchTaskDetails}
+              onEntryChange={() => {
+                fetchTaskDetails();
+                fetchTimeEntries(currentDate);
+              }}
             />
           </Box>
         </VStack>
@@ -304,7 +427,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
           task={task}
           projectId={params.id}
           teamMembers={teamMembers}
-          onSave={handleTaskUpdate}
+          onUpdate={handleTaskUpdate}
         />
       </Container>
     </AuthGuard>

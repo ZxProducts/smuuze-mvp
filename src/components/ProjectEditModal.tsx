@@ -18,18 +18,12 @@ import {
   FormLabel,
   VStack,
 } from '@chakra-ui/react';
-import { ProjectUpdate } from '@/lib/supabase';
+import { Project, ProjectUpdate } from '@/types/database.types';
 
 interface ProjectEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  project: {
-    id: string;
-    name: string;
-    description: string | null;
-    start_date: string;
-    end_date: string | null;
-  };
+  project: Project;
   onSave: (updates: ProjectUpdate) => Promise<void>;
 }
 
@@ -104,7 +98,7 @@ export function ProjectEditModal({
               />
             </FormControl>
 
-            <FormControl isRequired>
+            <FormControl>
               <FormLabel>開始日</FormLabel>
               <Input
                 name="start_date"

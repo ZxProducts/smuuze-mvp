@@ -6,6 +6,7 @@ import { Providers } from '../components/ui/provider';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { AuthProvider } from '../contexts/AuthContext';
+import { TimeEntryProvider } from '../contexts/TimeEntryContext';
 import { AuthGuard } from '../components/AuthGuard';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { PWAPrompt } from '../components/PWAPrompt';
@@ -88,12 +89,13 @@ export default function RootLayout({
           <Providers>
             <AuthProvider>
               <AuthGuard>
-                <div style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  minHeight: '100vh',
-                  background: 'var(--chakra-colors-gray-50)'
-                }}>
+                <TimeEntryProvider>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: '100vh',
+                    background: 'var(--chakra-colors-gray-50)'
+                  }}>
                   <Header />
                   <main style={{ 
                     flex: '1 0 auto',
@@ -104,7 +106,8 @@ export default function RootLayout({
                   </main>
                   <Footer />
                   <PWAPrompt />
-                </div>
+                  </div>
+                </TimeEntryProvider>
               </AuthGuard>
             </AuthProvider>
           </Providers>

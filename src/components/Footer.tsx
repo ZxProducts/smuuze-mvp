@@ -33,7 +33,7 @@ export function Footer() {
             align="center"
             mt={{ base: 4, md: 0 }}
           >
-            <Link href="/terms" passHref>
+            <Link href="/terms" passHref legacyBehavior>
               <ChakraLink
                 _hover={{
                   color: 'brand.500',
@@ -43,7 +43,7 @@ export function Footer() {
                 利用規約
               </ChakraLink>
             </Link>
-            <Link href="/privacy" passHref>
+            <Link href="/privacy" passHref legacyBehavior>
               <ChakraLink
                 _hover={{
                   color: 'brand.500',
@@ -53,7 +53,7 @@ export function Footer() {
                 プライバシーポリシー
               </ChakraLink>
             </Link>
-            <Link href="/contact" passHref>
+            <Link href="/contact" passHref legacyBehavior>
               <ChakraLink
                 _hover={{
                   color: 'brand.500',

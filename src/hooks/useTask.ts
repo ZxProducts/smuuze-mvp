@@ -46,9 +46,10 @@ export function useTask(taskId: string): UseTaskReturn {
         .from('tasks')
         .select('*')
         .eq('id', taskId)
-        .single();
+        .maybeSingle();
 
       if (taskError) throw taskError;
+      if (!taskData) throw new Error('タスクが見つかりません');
 
       const { data: commentsData } = await supabase
         .from('task_comments')
@@ -89,9 +90,10 @@ export function useTask(taskId: string): UseTaskReturn {
         .from('tasks')
         .select('*')
         .eq('id', taskId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
+      if (!updatedTask) throw new Error('タスクが見つかりません');
       return updatedTask as Task;
     }, {
       successMessage: 'タスクを更新しました',
@@ -121,9 +123,10 @@ export function useTask(taskId: string): UseTaskReturn {
           *,
           author:profiles(full_name)
         `)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!comment) throw new Error('コメントの作成に失敗しました');
       return comment as Comment;
     }, {
       successMessage: 'コメントを追加しました',

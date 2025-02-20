@@ -35,35 +35,15 @@ create table public.team_members (
     unique(team_id, user_id)
 );
 
--- Create offers table
-create table public.offers (
-    id uuid default uuid_generate_v4() primary key,
-    team_id uuid references public.teams(id) on delete cascade not null,
-    email text not null,
-    hourly_rate numeric not null check (hourly_rate >= 0),
-    daily_work_hours numeric not null check (daily_work_hours > 0 and daily_work_hours <= 24),
-    weekly_work_days numeric not null check (weekly_work_days > 0 and weekly_work_days <= 7),
-    meeting_included boolean not null default false,
-    notes text,
-    status text not null check (status in ('pending', 'accepted', 'rejected')) default 'pending',
-    token text unique not null,
-    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
 -- Add indexes
 create index profiles_role_idx on public.profiles(role);
 create index team_members_team_id_idx on public.team_members(team_id);
 create index team_members_user_id_idx on public.team_members(user_id);
-create index offers_team_id_idx on public.offers(team_id);
-create index offers_email_idx on public.offers(email);
-create index offers_token_idx on public.offers(token);
 
 -- Set up Row Level Security (RLS)
 alter table public.profiles enable row level security;
 alter table public.teams enable row level security;
 alter table public.team_members enable row level security;
-alter table public.offers enable row level security;
 
 -- Create policies
 create policy "Public profiles are viewable by everyone"
@@ -112,11 +92,6 @@ create trigger handle_updated_at
 
 create trigger handle_updated_at
     before update on public.teams
-    for each row
-    execute function public.handle_updated_at();
-
-create trigger handle_updated_at
-    before update on public.offers
     for each row
     execute function public.handle_updated_at();
 

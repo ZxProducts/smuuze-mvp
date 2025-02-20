@@ -1,6 +1,11 @@
 export interface Database {
   public: {
     Tables: {
+      offers: {
+        Row: Offer;
+        Insert: OfferInsert;
+        Update: OfferUpdate;
+      };
       projects: {
         Row: Project;
         Insert: ProjectInsert;
@@ -10,6 +15,11 @@ export interface Database {
         Row: Task;
         Insert: TaskInsert;
         Update: TaskUpdate;
+      };
+      task_assignees: {
+        Row: TaskAssignee;
+        Insert: TaskAssigneeInsert;
+        Update: TaskAssigneeUpdate;
       };
       time_entries: {
         Row: TimeEntry;
@@ -50,7 +60,7 @@ export interface Project {
   name: string;
   description: string | null;
   team_id: string;
-  owner_id: string;
+  created_by: string;
   start_date: string | null;
   end_date: string | null;
   created_at: string;
@@ -60,18 +70,11 @@ export interface Project {
 export type ProjectInsert = Omit<Project, 'id' | 'created_at' | 'updated_at'>;
 export type ProjectUpdate = Partial<ProjectInsert>;
 
-export type TaskPriority = 'low' | 'medium' | 'high';
-export type TaskStatus = 'not_started' | 'in_progress' | 'completed';
-
 export interface BaseTask {
   title: string;
   description: string | null;
-  status: TaskStatus;
-  priority: TaskPriority;
   project_id: string;
   team_id: string;
-  assignee_id: string | null;
-  assigned_to?: string | null; // 後方互換性のため
   due_date: string | null;
 }
 
@@ -84,9 +87,25 @@ export interface Task extends BaseTask {
 export type TaskInsert = BaseTask;
 export type TaskUpdate = Partial<BaseTask>;
 
-export interface TimeEntry {
+export interface TaskAssignee {
   id: string;
   task_id: string;
+  user_id: string;
+  assigned_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskAssigneeWithProfile extends TaskAssignee {
+  profiles: Profile;
+}
+
+export type TaskAssigneeInsert = Pick<TaskAssignee, 'task_id' | 'user_id'>;
+export type TaskAssigneeUpdate = Partial<TaskAssigneeInsert>;
+
+export interface TimeEntry {
+  id: string;
+  task_id: string | null;
   user_id: string;
   project_id: string;
   start_time: string;
@@ -96,51 +115,67 @@ export interface TimeEntry {
   updated_at: string;
 }
 
-export type TimeEntryInsert = Pick<TimeEntry, 'task_id' | 'user_id' | 'project_id' | 'start_time'> & {
+export type TimeEntryInsert = Pick<TimeEntry, 'user_id' | 'project_id' | 'start_time'> & {
+  task_id?: string | null;
   end_time?: string | null;
   description?: string | null;
 };
 
 export type TimeEntryUpdate = Partial<TimeEntryInsert>;
 
+export interface TimeEntryWithDetails extends TimeEntry {
+  task?: {
+    id: string;
+    title: string;
+  } | null;
+  user: {
+    id: string;
+    full_name: string;
+  };
+}
+
 export interface TaskComment {
   id: string;
   task_id: string;
-  user_id: string;
-  content: string;
+  author_id: string;
+  comment: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface TaskCommentWithAuthor extends TaskComment {
+export interface TaskCommentWithAuthor extends Omit<TaskComment, 'comment'> {
   author: {
     id: string;
     full_name: string;
   };
-  comment?: string;  // 後方互換性のため
+  content: string;  // commentをcontentとして扱う
 }
 
-export type TaskCommentInsert = Pick<TaskComment, 'task_id' | 'user_id' | 'content'>;
+export type TaskCommentInsert = Pick<TaskComment, 'task_id' | 'author_id' | 'comment'>;
 export type TaskCommentUpdate = Partial<TaskCommentInsert>;
 
 export interface TaskHistory {
   id: string;
   task_id: string;
-  user_id: string;
+  changed_by: string;
   change_type: string;
-  previous_value: string | null;
+  old_value: string | null;
   new_value: string | null;
-  created_at: string;
+  changed_at: string;
+  author?: {
+    id: string;
+    full_name: string;
+  };
 }
 
-export type TaskHistoryInsert = Omit<TaskHistory, 'id' | 'created_at'>;
+export type TaskHistoryInsert = Omit<TaskHistory, 'id' | 'changed_at'>;
 export type TaskHistoryUpdate = Partial<TaskHistoryInsert>;
 
 export interface Team {
   id: string;
   name: string;
   description: string | null;
-  owner_id: string;
+  created_by: string;
   created_at: string;
   updated_at: string;
 }
@@ -148,11 +183,30 @@ export interface Team {
 export type TeamInsert = Omit<Team, 'id' | 'created_at' | 'updated_at'>;
 export type TeamUpdate = Partial<TeamInsert>;
 
+export interface Offer {
+  id: string;
+  team_id: string;
+  email: string;
+  hourly_rate: number;
+  daily_work_hours: number;
+  weekly_work_days: number;
+  meeting_included: boolean;
+  notes: string | null;
+  status: 'pending' | 'accepted' | 'rejected';
+  token: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type OfferInsert = Omit<Offer, 'id' | 'token' | 'created_at' | 'updated_at'>;
+export type OfferUpdate = Partial<OfferInsert>;
+
 export interface Profile {
   id: string;
   full_name: string;
-  avatar_url: string | null;
   email: string;
+  avatar_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -164,9 +218,13 @@ export interface TeamMember {
   id: string;
   team_id: string;
   user_id: string;
-  role: string;
-  created_at: string;
-  updated_at: string;
+  hourly_rate: number;
+  daily_work_hours: number;
+  weekly_work_days: number;
+  meeting_included: boolean;
+  notes: string | null;
+  joined_at: string;
+  role: 'admin' | 'member';
   profile: Profile;
 }
 
@@ -178,22 +236,14 @@ export interface TeamMemberWithProfile extends TeamMember {
   full_name?: string;  // 後方互換性のため
 }
 
-export interface TimeEntryWithDetails extends TimeEntry {
-  task: Task;
-  user: {
-    id: string;
-    full_name: string;
-  };
-}
-
 export interface TaskWithTimeEntries extends Task {
   time_entries: TimeEntry[];
-  assignee?: Profile;
+  assignees: Profile[];
 }
 
 export interface TaskDetail extends Task {
   project: Project;
-  assignee: Profile | null;
+  assignees: Profile[];
   time_entries: TimeEntry[];
   comments: TaskCommentWithAuthor[];
   history: TaskHistory[];
@@ -202,13 +252,6 @@ export interface TaskDetail extends Task {
 export interface ProjectWithTasks extends Project {
   tasks: TaskWithTimeEntries[];
   team_members?: TeamMemberWithProfile[];
-}
-
-export interface TimeEntryWithUser extends TimeEntry {
-  user: {
-    id: string;
-    full_name: string;
-  };
 }
 
 export interface DatabaseTimeEntry {
@@ -231,11 +274,8 @@ export interface DatabaseTaskResponse {
   id: string;
   title: string;
   description: string | null;
-  status: string;
-  priority: string;
   project_id: string;
   team_id: string;
-  assignee_id: string | null;
   due_date: string | null;
   created_at: string;
   updated_at: string;
@@ -244,13 +284,13 @@ export interface DatabaseTaskResponse {
     name: string;
     description: string | null;
   };
-  assignee: Profile | null;
+  assignees: Profile[];
   time_entries: DatabaseTimeEntry[];
   comments: Array<{
     id: string;
     task_id: string;
-    user_id: string;
-    content: string;
+    author_id: string;
+    comment: string;
     created_at: string;
     author: {
       id: string;
@@ -260,11 +300,15 @@ export interface DatabaseTaskResponse {
   history: Array<{
     id: string;
     task_id: string;
-    user_id: string;
+    changed_by: string;
     change_type: string;
-    previous_value: string | null;
+    old_value: string | null;
     new_value: string | null;
-    created_at: string;
+    changed_at: string;
+    author: {
+      id: string;
+      full_name: string;
+    };
   }>;
 }
 
@@ -272,8 +316,6 @@ export interface DatabaseTeamMemberResponse {
   id: string;
   team_id: string;
   user_id: string;
-  role: string;
-  created_at: string;
-  updated_at: string;
+  role: 'admin' | 'member';
   profiles: Profile;
 }

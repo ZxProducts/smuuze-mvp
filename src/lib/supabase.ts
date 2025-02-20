@@ -1,12 +1,19 @@
+// ProjectUpdate 型定義を修正
+export interface ProjectUpdate {
+  name?: string;
+  description?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
 import { createClient } from '@supabase/supabase-js';
-import { Database, TeamMember, RawTeamMemberProfile } from '@/types/database.types';
+import { Database, TeamMember, Profile, ProjectWithTasks, Task } from '@/types/database.types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
-// 型定義のエクスポート
 export type Tables = Database['public']['Tables'];
 export type TeamRow = Tables['teams']['Row'];
 export type ProjectRow = Tables['projects']['Row'];
@@ -17,7 +24,6 @@ export type TaskCommentRow = Tables['task_comments']['Row'];
 export type TaskHistoryRow = Tables['task_history']['Row'];
 export type { TeamMember };
 
-// データベースエラーハンドリング用のユーティリティ
 export class DatabaseError extends Error {
   constructor(message: string, public originalError: any) {
     super(message);
@@ -25,20 +31,9 @@ export class DatabaseError extends Error {
   }
 }
 
-// タスク統計の型定義
+// タスク統計の型定義を修正
 export interface TaskStatistics {
   total: number;
-  completed: number;
-  in_progress: number;
-  not_started: number;
-}
-
-// プロジェクト更新用の型定義
-export interface ProjectUpdate {
-  name?: string;
-  description?: string | null;
-  start_date?: string;
-  end_date?: string | null;
 }
 
 // プロジェクト詳細の型定義
@@ -61,7 +56,7 @@ export interface TaskDetail extends TaskRow {
   })[];
 }
 
-// 共通のデータベース操作関数
+// dbOperations内のメソッドはそのまま
 export const dbOperations = {
   // プロファイル操作
   profiles: {
@@ -119,6 +114,7 @@ export const dbOperations = {
       const { data, error } = await supabase
         .from('team_members')
         .select(`
+          *,
           profiles:user_id (
             id,
             full_name
@@ -127,10 +123,22 @@ export const dbOperations = {
         .eq('team_id', teamId);
 
       if (error) throw new DatabaseError('チームメンバーの取得に失敗しました', error);
-      
-      if (!data) return [];
 
-      return data.flatMap((member: RawTeamMemberProfile) => member.profiles);
+      if (!data) return [];
+      
+      return data.map((member): TeamMember => ({
+        id: member.id,
+        team_id: member.team_id,
+        user_id: member.user_id,
+        hourly_rate: member.hourly_rate,
+        daily_work_hours: member.daily_work_hours,
+        weekly_work_days: member.weekly_work_days,
+        meeting_included: member.meeting_included,
+        notes: member.notes,
+        joined_at: member.joined_at,
+        role: member.role,
+        profile: member.profiles
+      }));
     },
 
     async create(data: Tables['teams']['Insert']) {
@@ -147,31 +155,67 @@ export const dbOperations = {
 
   // プロジェクト操作
   projects: {
+    // プロジェクト取得時の戻り値の型を更新
     async list() {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw new DatabaseError('プロジェクト一覧の取得に失敗しました', error);
+      console.log('Executing query:', supabase.from('projects').select('*').order('created_at', { ascending: false }).toString());
+
+      if (error) {
+        console.log('ERROR-LOG:' + error.message);
+        throw new DatabaseError('プロジェクト一覧の取得に失敗しました', error);
+      }
       return data;
     },
 
-    async getById(id: string): Promise<ProjectRow & { tasks: TaskRow[] }> {
-      const { data, error } = await supabase
+    async getById(id: string): Promise<ProjectWithTasks> {
+      // まずプロジェクトとタスクを取得
+      const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select(`
           *,
-          tasks (
-            *,
-            assignee:profiles(id, full_name)
-          )
+          tasks (*)
         `)
         .eq('id', id)
         .single();
 
-      if (error) throw new DatabaseError('プロジェクトの取得に失敗しました', error);
-      return data;
+      if (projectError) throw new DatabaseError('プロジェクトの取得に失敗しました', projectError);
+
+      // 各タスクのアサイン情報を取得
+      const tasksWithAssignees = await Promise.all(
+        projectData.tasks.map(async (task: Task) => {
+          const { data: assigneeData, error: assigneeError } = await supabase
+            .from('task_assignees')
+            .select(`
+              task_id,
+              profile:profiles!task_assignees_user_id_fkey (
+                id,
+                full_name,
+                created_at,
+                updated_at
+              )
+            `)
+            .eq('task_id', task.id);
+
+          if (assigneeError) {
+            console.error('タスクのアサイン情報の取得に失敗しました:', assigneeError);
+            return { ...task, assignees: [] };
+          }
+
+          return {
+            ...task,
+            assignees: assigneeData.map((assignee: any) => assignee.profile)
+          };
+        })
+      );
+
+      return {
+        ...projectData,
+        tasks: tasksWithAssignees
+      };
     },
 
     async create(data: Tables['projects']['Insert']) {
@@ -198,57 +242,38 @@ export const dbOperations = {
     },
 
     async getProjectTimeEntries(id: string) {
-      const { data: tasks, error } = await supabase
-        .from('tasks')
+      const { data, error } = await supabase
+        .from('time_entries')
         .select(`
-          id,
-          title,
-          status,
-          project_id,
-          team_id,
-          time_entries (
-            *,
-            user:user_id(
-              id,
-              full_name
-            )
+          *,
+          user:user_id(
+            id,
+            full_name
+          ),
+          task:task_id(
+            id,
+            title
           )
         `)
-        .eq('project_id', id);
+        .eq('project_id', id)
+        .order('start_time', { ascending: false });
 
       if (error) throw new DatabaseError('プロジェクトの作業時間データの取得に失敗しました', error);
-      return tasks;
+      return data;
     },
   },
 
   // タスク操作
   tasks: {
     async getProjectStats(projectId: string): Promise<TaskStatistics> {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('tasks')
-        .select('status')
+        .select('*', { count: 'exact' })
         .eq('project_id', projectId);
 
       if (error) throw new DatabaseError('タスク統計の取得に失敗しました', error);
 
-      return data.reduce(
-        (acc, task) => {
-          acc.total++;
-          switch (task.status) {
-            case 'completed':
-              acc.completed++;
-              break;
-            case 'in_progress':
-              acc.in_progress++;
-              break;
-            case 'not_started':
-              acc.not_started++;
-              break;
-          }
-          return acc;
-        },
-        { total: 0, completed: 0, in_progress: 0, not_started: 0 }
-      );
+      return { total: count || 0 };
     },
 
     async getById(id: string): Promise<TaskDetail> {
@@ -341,28 +366,6 @@ export const dbOperations = {
       return true;
     },
 
-    async updateStatus(id: string, status: TaskRow['status'], userId: string) {
-      const { data, error } = await supabase
-        .from('tasks')
-        .update({ status })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw new DatabaseError('タスクのステータス更新に失敗しました', error);
-
-      // タスク履歴を記録
-      await supabase.from('task_history').insert({
-        task_id: id,
-        changed_by: userId,
-        change_type: 'status_change',
-        old_value: { status: data.status },
-        new_value: { status },
-      });
-
-      return data;
-    },
-
     async addComment(data: Tables['task_comments']['Insert']) {
       const { data: comment, error } = await supabase
         .from('task_comments')
@@ -394,6 +397,23 @@ export const dbOperations = {
 
   // タイムエントリー操作
   timeEntries: {
+    async getUserTimeEntries(userId: string) {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select(`
+          *,
+          user:user_id (
+            id,
+            full_name
+          )
+        `)
+        .eq('user_id', userId)
+        .order('start_time', { ascending: false });
+
+      if (error) throw new DatabaseError('作業記録の取得に失敗しました', error);
+      return data;
+    },
+
     async getCurrentEntry(userId: string) {
       const { data, error } = await supabase
         .from('time_entries')
@@ -420,25 +440,64 @@ export const dbOperations = {
         .select()
         .single();
 
-      if (error) throw new DatabaseError('作業記録の開始に失敗しました', error);
+      if (error) {
+        console.log(error);
+        throw new DatabaseError('作業記録の開始に失敗しました', error);
+      }
       return entry;
     },
 
-    async stop(userId: string) {
+    async stop(userId: string): Promise<TimeEntryRow> {
       const current = await this.getCurrentEntry(userId);
       if (!current) {
         throw new DatabaseError('アクティブな作業記録が見つかりません', null);
       }
 
-      const { data, error } = await supabase
-        .from('time_entries')
-        .update({ end_time: new Date().toISOString() })
-        .eq('id', current.id)
-        .select()
-        .single();
+     try {
+       const endTime = new Date().toISOString();
+       console.log('停止処理開始:', { current_id: current.id, userId, endTime });
+       
+       // まず更新を実行
+       const { error: updateError } = await supabase
+         .from('time_entries')
+         .update({
+           end_time: endTime,
+           updated_at: new Date().toISOString()
+         })
+         .eq('id', current.id)
+         .eq('user_id', userId);
 
-      if (error) throw new DatabaseError('作業記録の終了に失敗しました', error);
-      return data;
+       if (updateError) {
+         console.error('作業記録の更新エラー:', {
+           error: updateError,
+           recordInfo: { id: current.id, userId }
+         });
+         throw new DatabaseError('作業記録の更新に失敗しました', updateError);
+       }
+
+       // 更新後のデータを取得
+       const { data, error: selectError } = await supabase
+         .from('time_entries')
+         .select('*')
+         .eq('id', current.id)
+         .eq('user_id', userId)
+         .maybeSingle();
+
+       if (selectError) {
+         throw new DatabaseError('更新後のデータの取得に失敗しました', selectError);
+       }
+
+       // レコードが見つからない場合
+       if (!data) {
+         console.error('更新後のレコードが見つかりません:', { id: current.id, userId });
+         throw new DatabaseError('更新後のレコードが見つかりません', null);
+       }
+
+       return data;
+      } catch (error) {
+        console.error('作業記録の停止中にエラーが発生しました:', error);
+        throw error;
+      }
     },
 
     async getTaskEntries(taskId: string) {

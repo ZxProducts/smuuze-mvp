@@ -10,11 +10,31 @@ import {
   useBreakpointValue,
   Container,
   Text,
+  Divider,
 } from '@chakra-ui/react';
 import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTimeEntry } from '@/contexts/TimeEntryContext';
+import { TaskMenu } from './TaskMenu';
+import { TimeIcon } from '@chakra-ui/icons';
+
+// アクティブなタイムエントリを表示するコンポーネント
+function ActiveTimeEntryDisplay() {
+  const { activeEntry } = useTimeEntry();
+
+  if (!activeEntry) return null;
+
+  return (
+    <Flex align="center" gap={2} bg="green.50" px={3} py={2} rounded="md">
+      <TimeIcon color="green.500" />
+      <Text fontSize="sm" color="gray.700">
+        {activeEntry.task?.title}
+      </Text>
+    </Flex>
+  );
+}
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,13 +50,16 @@ export function Header() {
   const privateMenuItems = [
     { name: 'ダッシュボード', href: '/dashboard' },
     { name: 'プロジェクト', href: '/projects' },
-    { name: 'タスク', href: '/tasks' },
     { name: 'タイムシート', href: '/timesheet' },
     { name: 'レポート', href: '/reports' },
+    { name: 'チーム管理', href: '/teams' },
   ];
-
-  const menuItems = user ? privateMenuItems : publicMenuItems;
-
+  
+  const menuItems = user ? [
+    ...privateMenuItems,
+    { name: 'マイタスク', href: '/tasks' },
+  ] : publicMenuItems;
+  
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -122,12 +145,15 @@ export function Header() {
             align="center"
           >
             {user ? (
-              <Box display="flex" alignItems="center">
+              <Box display="flex" alignItems="center" gap={2}>
                 <Link href="/profile">
-                  <Button variant="ghost" mr={2}>
+                  <Button variant="ghost">
                     プロフィール
                   </Button>
                 </Link>
+                {/* アクティブなタイムエントリの表示 */}
+                <ActiveTimeEntryDisplay />
+                <TaskMenu />
                 <Button
                   variant="outline"
                   onClick={handleSignOut}
@@ -189,6 +215,12 @@ export function Header() {
                       プロフィール
                     </Button>
                   </Link>
+                  <Box w="full">
+                    <ActiveTimeEntryDisplay />
+                  </Box>
+                  <Box w="full">
+                    <TaskMenu />
+                  </Box>
                   <Button
                     w="full"
                     variant="outline"

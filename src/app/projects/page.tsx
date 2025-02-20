@@ -8,8 +8,6 @@ import {
   Text,
   Button,
   Grid,
-  Badge,
-  Progress,
 } from '@chakra-ui/react';
 import { AddIcon } from '@chakra-ui/icons';
 import { useRouter } from 'next/navigation';
@@ -58,19 +56,6 @@ export default function ProjectsPage() {
         console.error('Error loading projects:', error);
       }
     });
-  };
-
-  const calculateProgress = (stats: TaskStatistics) => {
-    if (stats.total === 0) return 0;
-    return (stats.completed / stats.total) * 100;
-  };
-
-  const getStatusBadgeColor = (value: number, total: number) => {
-    if (total === 0) return 'gray';
-    const percentage = (value / total) * 100;
-    if (percentage >= 80) return 'green';
-    if (percentage >= 40) return 'yellow';
-    return 'red';
   };
 
   return (
@@ -127,36 +112,10 @@ export default function ProjectsPage() {
                 {project.description || '説明なし'}
               </Text>
 
-              <Box mb={4}>
-                <Box display="flex" justifyContent="space-between" mb={2}>
-                  <Text fontSize="sm" color="gray.600">
-                    進捗状況
-                  </Text>
-                  <Text fontSize="sm" fontWeight="bold">
-                    {Math.round(calculateProgress(project.taskStats))}%
-                  </Text>
-                </Box>
-                <Progress
-                  value={calculateProgress(project.taskStats)}
-                  size="sm"
-                  colorScheme={getStatusBadgeColor(
-                    project.taskStats.completed,
-                    project.taskStats.total
-                  )}
-                  borderRadius="full"
-                />
-              </Box>
-
-              <Box display="flex" gap={2} flexWrap="wrap">
-                <Badge colorScheme="green">
-                  完了: {project.taskStats.completed}
-                </Badge>
-                <Badge colorScheme="blue">
-                  進行中: {project.taskStats.in_progress}
-                </Badge>
-                <Badge colorScheme="gray">
-                  未着手: {project.taskStats.not_started}
-                </Badge>
+              <Box textAlign="right">
+                <Text fontSize="sm" color="gray.600">
+                  タスク数: {project.taskStats.total}件
+                </Text>
               </Box>
             </Box>
           ))}

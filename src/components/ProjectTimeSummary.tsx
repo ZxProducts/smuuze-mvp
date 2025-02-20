@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Grid,
@@ -10,7 +10,6 @@ import {
   StatNumber,
   StatHelpText,
   Text,
-  Tooltip,
   VStack,
   HStack,
   Progress,
@@ -20,19 +19,22 @@ import {
   Tr,
   Th,
   Td,
-  Badge,
+  IconButton,
+  Collapse,
 } from '@chakra-ui/react';
-import { TaskRow, TimeEntryRow } from '@/lib/supabase';
+import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
+import { Task, TimeEntryWithDetails } from '@/types/database.types';
 
-interface TimeEntryWithUser extends TimeEntryRow {
-  user: {
-    id: string;
-    full_name: string;
-  };
-}
-
-interface TaskWithTimeEntries extends TaskRow {
-  time_entries: TimeEntryWithUser[];
+interface TaskWithTimeEntries {
+  id: string;
+  title: string;
+  description: string | null;
+  project_id: string;
+  team_id: string;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  time_entries: TimeEntryWithDetails[];
 }
 
 interface ProjectTimeSummaryProps {
@@ -43,19 +45,31 @@ interface UserSummary {
   user_id: string;
   full_name: string;
   total_minutes: number;
-  completed_tasks: number;
-  in_progress_tasks: number;
 }
 
 interface TaskSummary {
   task_id: string;
   title: string;
-  status: TaskRow['status'];
   total_minutes: number;
   contributor_count: number;
+  entries: TimeEntryWithDetails[];
 }
 
 export function ProjectTimeSummary({ tasks }: ProjectTimeSummaryProps) {
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+
+  const toggleTaskExpand = (taskId: string) => {
+    setExpandedTasks(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
   const calculateDuration = (start: string, end: string | null): number => {
     const startTime = new Date(start);
     const endTime = end ? new Date(end) : new Date();
@@ -77,18 +91,9 @@ export function ProjectTimeSummary({ tasks }: ProjectTimeSummaryProps) {
           user_id: entry.user.id,
           full_name: entry.user.full_name,
           total_minutes: 0,
-          completed_tasks: 0,
-          in_progress_tasks: 0,
         };
 
         existing.total_minutes += calculateDuration(entry.start_time, entry.end_time);
-
-        if (task.status === 'completed') {
-          existing.completed_tasks++;
-        } else if (task.status === 'in_progress') {
-          existing.in_progress_tasks++;
-        }
-
         summaries.set(entry.user.id, existing);
       });
     });
@@ -98,21 +103,62 @@ export function ProjectTimeSummary({ tasks }: ProjectTimeSummaryProps) {
   };
 
   const calculateTaskSummaries = (): TaskSummary[] => {
-    return tasks.map(task => {
-      const contributors = new Set(task.time_entries.map(entry => entry.user.id));
-      const totalMinutes = task.time_entries.reduce(
+    // タスクがないエントリーをまとめる
+    const entriesWithoutTask: TimeEntryWithDetails[] = [];
+    const entriesByTask = new Map<string, TimeEntryWithDetails[]>();
+
+    tasks.forEach(task => {
+      task.time_entries.forEach(entry => {
+        if (!entry.task || !entry.task.id) {
+          entriesWithoutTask.push(entry);
+        } else {
+          const entries = entriesByTask.get(entry.task.id) || [];
+          entries.push(entry);
+          entriesByTask.set(entry.task.id, entries);
+        }
+      });
+    });
+
+    const taskSummaries: TaskSummary[] = [];
+
+    // タスクなしのエントリーがある場合、まとめて追加
+    if (entriesWithoutTask.length > 0) {
+      const contributors = new Set(entriesWithoutTask.map(entry => entry.user.id));
+      const totalMinutes = entriesWithoutTask.reduce(
         (total, entry) => total + calculateDuration(entry.start_time, entry.end_time),
         0
       );
 
-      return {
-        task_id: task.id,
-        title: task.title,
-        status: task.status,
+      taskSummaries.push({
+        task_id: 'no-task',
+        title: 'タスクなし',
         total_minutes: totalMinutes,
         contributor_count: contributors.size,
-      };
-    }).sort((a, b) => b.total_minutes - a.total_minutes);
+        entries: entriesWithoutTask,
+      });
+    }
+
+    // タスクがあるエントリーを追加
+    entriesByTask.forEach((entries, taskId) => {
+      const task = tasks.find(t => entries.some(e => e.task?.id === t.id));
+      if (!task) return;
+
+      const contributors = new Set(entries.map(entry => entry.user.id));
+      const totalMinutes = entries.reduce(
+        (total, entry) => total + calculateDuration(entry.start_time, entry.end_time),
+        0
+      );
+
+      taskSummaries.push({
+        task_id: taskId,
+        title: task.title,
+        total_minutes: totalMinutes,
+        contributor_count: contributors.size,
+        entries: entries,
+      });
+    });
+
+    return taskSummaries.sort((a, b) => b.total_minutes - a.total_minutes);
   };
 
   const getTotalStats = () => {
@@ -122,14 +168,10 @@ export function ProjectTimeSummary({ tasks }: ProjectTimeSummaryProps) {
       0
     );
     const uniqueUsers = new Set(allEntries.map(entry => entry.user.id)).size;
-    const completedTasks = tasks.filter(task => task.status === 'completed').length;
-    const inProgressTasks = tasks.filter(task => task.status === 'in_progress').length;
 
     return {
       totalMinutes,
       uniqueUsers,
-      completedTasks,
-      inProgressTasks,
     };
   };
 
@@ -140,7 +182,7 @@ export function ProjectTimeSummary({ tasks }: ProjectTimeSummaryProps) {
   return (
     <VStack spacing={8} align="stretch">
       {/* 全体の統計 */}
-      <Grid templateColumns="repeat(4, 1fr)" gap={4}>
+      <Grid templateColumns="repeat(2, 1fr)" gap={4}>
         <GridItem>
           <Stat>
             <StatLabel>総作業時間</StatLabel>
@@ -155,20 +197,6 @@ export function ProjectTimeSummary({ tasks }: ProjectTimeSummaryProps) {
             <StatHelpText>ユニークなメンバー</StatHelpText>
           </Stat>
         </GridItem>
-        <GridItem>
-          <Stat>
-            <StatLabel>完了タスク</StatLabel>
-            <StatNumber>{totalStats.completedTasks}</StatNumber>
-            <StatHelpText>全{tasks.length}タスク中</StatHelpText>
-          </Stat>
-        </GridItem>
-        <GridItem>
-          <Stat>
-            <StatLabel>進行中タスク</StatLabel>
-            <StatNumber>{totalStats.inProgressTasks}</StatNumber>
-            <StatHelpText>現在作業中</StatHelpText>
-          </Stat>
-        </GridItem>
       </Grid>
 
       {/* メンバー別作業時間 */}
@@ -179,8 +207,6 @@ export function ProjectTimeSummary({ tasks }: ProjectTimeSummaryProps) {
             <Tr>
               <Th>メンバー</Th>
               <Th>作業時間</Th>
-              <Th>完了タスク</Th>
-              <Th>進行中タスク</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -188,12 +214,6 @@ export function ProjectTimeSummary({ tasks }: ProjectTimeSummaryProps) {
               <Tr key={summary.user_id}>
                 <Td fontWeight="medium">{summary.full_name}</Td>
                 <Td>{getTimeString(summary.total_minutes)}</Td>
-                <Td>
-                  <Badge colorScheme="green">{summary.completed_tasks}</Badge>
-                </Td>
-                <Td>
-                  <Badge colorScheme="blue">{summary.in_progress_tasks}</Badge>
-                </Td>
               </Tr>
             ))}
           </Tbody>
@@ -205,28 +225,57 @@ export function ProjectTimeSummary({ tasks }: ProjectTimeSummaryProps) {
         <Text fontSize="lg" fontWeight="bold" mb={4}>タスク別作業時間</Text>
         <VStack spacing={4} align="stretch">
           {taskSummaries.map(task => (
-            <Box key={task.task_id} p={4} bg="gray.50" borderRadius="md">
-              <HStack justify="space-between" mb={2}>
-                <Text fontWeight="bold">{task.title}</Text>
-                <Badge
-                  colorScheme={
-                    task.status === 'completed' ? 'green' :
-                    task.status === 'in_progress' ? 'blue' : 'gray'
-                  }
-                >
-                  {task.status === 'completed' ? '完了' :
-                   task.status === 'in_progress' ? '進行中' : '未着手'}
-                </Badge>
+            <Box key={task.task_id} borderWidth={1} borderRadius="md" overflow="hidden">
+              <HStack
+                p={4}
+                justify="space-between"
+                bg="gray.50"
+                cursor="pointer"
+                onClick={() => toggleTaskExpand(task.task_id)}
+              >
+                <HStack justify="space-between" width="100%">
+                  <Box>
+                    <Text fontWeight="bold">{task.title}</Text>
+                    <Text fontSize="sm" color="gray.600">
+                      合計: {getTimeString(task.total_minutes)} (作業者: {task.contributor_count}人)
+                    </Text>
+                  </Box>
+                  <IconButton
+                    aria-label="Toggle entries"
+                    icon={expandedTasks.has(task.task_id) ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                    variant="ghost"
+                  />
+                </HStack>
               </HStack>
-              <Text color="gray.600" mb={2}>
-                合計: {getTimeString(task.total_minutes)} (作業者: {task.contributor_count}人)
-              </Text>
-              <Progress
-                value={task.total_minutes}
-                max={Math.max(...taskSummaries.map(t => t.total_minutes))}
-                colorScheme="brand"
-                size="sm"
-              />
+
+              <Collapse in={expandedTasks.has(task.task_id)}>
+                <VStack spacing={2} p={4} align="stretch">
+                  {task.entries.map(entry => (
+                    <Box
+                      key={entry.id}
+                      p={3}
+                      borderWidth={1}
+                      borderRadius="md"
+                      borderColor={!entry.end_time ? 'brand.500' : undefined}
+                    >
+                      <HStack justify="space-between" mb={2}>
+                        <Text fontSize="sm" fontWeight="medium">
+                          {entry.user.full_name}
+                        </Text>
+                        <Text fontSize="sm" color="gray.600">
+                          {getTimeString(calculateDuration(entry.start_time, entry.end_time))}
+                        </Text>
+                      </HStack>
+                      <Text fontSize="sm" color="gray.500">
+                        {new Date(entry.start_time).toLocaleString()} -{' '}
+                        {entry.end_time
+                          ? new Date(entry.end_time).toLocaleString()
+                          : '記録中'}
+                      </Text>
+                    </Box>
+                  ))}
+                </VStack>
+              </Collapse>
             </Box>
           ))}
         </VStack>

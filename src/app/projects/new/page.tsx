@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -13,6 +13,7 @@ import {
   Button,
   useToast,
   FormErrorMessage,
+  Select,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,13 +26,32 @@ export default function NewProjectPage() {
   const toast = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('teams')
+        .select('id, name')
+        .order('name');
+
+      if (!error && data) {
+        setTeams(data);
+      }
+    };
+
+    fetchTeams();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
     const description = formData.get('description') as string;
+    const teamId = formData.get('teamId') as string;
     const startDate = formData.get('startDate') as string;
     const endDate = formData.get('endDate') as string;
 
@@ -39,6 +59,9 @@ export default function NewProjectPage() {
     const newErrors: { [key: string]: string } = {};
     if (!name.trim()) {
       newErrors.name = 'プロジェクト名は必須です';
+    }
+    if (!teamId) {
+      newErrors.teamId = 'チームを選択してください';
     }
     if (!startDate) {
       newErrors.startDate = '開始日は必須です';
@@ -54,26 +77,14 @@ export default function NewProjectPage() {
     try {
       if (!user) throw new Error('認証エラー');
 
-      // まずチームを作成
-      const { data: teamData, error: teamError } = await supabase
-        .from('teams')
-        .insert([{
-          name: `${name}のチーム`,
-          owner_id: user.id
-        }])
-        .select()
-        .single();
-
-      if (teamError) throw teamError;
-
       // プロジェクトを作成
       const projectData: ProjectInsert = {
         name,
         description: description || null,
-        team_id: teamData.id,
-        owner_id: user.id,
+        team_id: teamId,
         start_date: startDate,
         end_date: endDate || null,
+        created_by: user.id,
       };
 
       const { error: projectError } = await supabase
@@ -113,6 +124,18 @@ export default function NewProjectPage() {
                 <FormLabel>プロジェクト名</FormLabel>
                 <Input name="name" placeholder="プロジェクト名を入力" />
                 <FormErrorMessage>{errors.name}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isRequired isInvalid={!!errors.teamId}>
+                <FormLabel>チーム</FormLabel>
+                <Select name="teamId" placeholder="チームを選択">
+                  {teams.map(team => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </Select>
+                <FormErrorMessage>{errors.teamId}</FormErrorMessage>
               </FormControl>
 
               <FormControl>

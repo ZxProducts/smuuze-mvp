@@ -35,7 +35,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import { TaskRow, TimeEntryRow } from '@/lib/supabase';
+import { TimeEntryRow } from '@/lib/supabase';
 import 'chartjs-adapter-date-fns';
 import { ja } from 'date-fns/locale';
 import { ChartDateFilter, PresetRange, DateRange } from './ChartDateFilter';
@@ -52,6 +52,7 @@ import {
   getChartColors,
 } from './ChartStyleSettings';
 import { TimeComparisonChart } from './TimeComparisonChart';
+import { Profile, Task } from '@/types/database.types';
 
 ChartJS.register(
   CategoryScale,
@@ -73,8 +74,9 @@ interface TimeEntryWithUser extends TimeEntryRow {
   };
 }
 
-interface TaskWithTimeEntries extends TaskRow {
+interface TaskWithTimeEntries extends Task {
   time_entries: TimeEntryWithUser[];
+  assignees: Profile[];
 }
 
 interface ProjectChartsProps {
@@ -157,30 +159,6 @@ export function ProjectCharts({ tasks }: ProjectChartsProps) {
     // 日付でソート
     return Array.from(dailyStats.entries())
       .sort(([a], [b]) => a.localeCompare(b));
-  }, [tasks, dateRange]);
-
-  // タスクステータス別の集計
-  const statusData = useMemo(() => {
-    const counts = {
-      not_started: 0,
-      in_progress: 0,
-      completed: 0,
-    };
-
-    tasks.forEach(task => {
-      const hasWorkInRange = task.time_entries.some(entry =>
-        isWithinRange(entry.start_time, dateRange)
-      );
-      if (hasWorkInRange) {
-        counts[task.status]++;
-      }
-    });
-
-    return {
-      labels: ['未着手', '進行中', '完了'],
-      data: [counts.not_started, counts.in_progress, counts.completed],
-      colors: ['#CBD5E0', '#4299E1', '#48BB78'],
-    };
   }, [tasks, dateRange]);
 
   // グラフのオプション設定
@@ -369,21 +347,6 @@ export function ProjectCharts({ tasks }: ProjectChartsProps) {
                 />
               </Box>
 
-              {/* タスクステータス分布 */}
-              <Box p={4} borderWidth={1} borderRadius="lg" borderColor={borderColor}>
-                <Heading size="md" mb={4}>タスクステータス分布</Heading>
-                <Bar
-                  data={{
-                    labels: statusData.labels,
-                    datasets: [{
-                      data: statusData.data,
-                      backgroundColor: colors.slice(0, statusData.data.length),
-                    }],
-                  }}
-                  options={chartOptions.bar}
-                />
-              </Box>
-
               {/* データ概要 */}
               <Box p={4} borderWidth={1} borderRadius="lg" borderColor={borderColor}>
                 <Heading size="md" mb={4}>データ概要</Heading>
@@ -406,7 +369,7 @@ export function ProjectCharts({ tasks }: ProjectChartsProps) {
                     <Text>1日平均作業時間</Text>
                     <Text fontWeight="bold">
                       {dailyTimeData.length > 0
-                        ? Math.round(dailyTimeData.reduce((sum, [_, h]) => sum + h, 0) / dailyTimeData.length * 10) / 10
+                        ? Math.round(dailyTimeData.reduce((sum, [_, h]) => sum + h, 0) / dailyTimeData.length / 60 * 10) / 10
                         : 0}時間
                     </Text>
                   </HStack>
