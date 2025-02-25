@@ -18,7 +18,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { TimeEntryWithDetails } from '@/types/database.types';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 
 interface TimeEntryEditModalProps {
   isOpen: boolean;

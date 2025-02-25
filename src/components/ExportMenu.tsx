@@ -13,7 +13,7 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import { DownloadIcon, ChevronDownIcon } from '@chakra-ui/icons';
-import { TaskRow, TimeEntryRow } from '@/lib/supabase';
+import { TaskRow, TimeEntryRow } from '@/lib/supabase/supabase';
 import {
   ExportType,
   exportTasks,

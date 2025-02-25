@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Task, Profile } from '@/types/database.types';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 
 export interface AssignedTask extends Task {
   project: {

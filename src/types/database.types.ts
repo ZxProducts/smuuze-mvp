@@ -206,7 +206,6 @@ export interface Profile {
   id: string;
   full_name: string;
   email: string;
-  avatar_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -236,11 +235,6 @@ export interface TeamMemberWithProfile extends TeamMember {
   full_name?: string;  // 後方互換性のため
 }
 
-export interface TaskWithTimeEntries extends Task {
-  time_entries: TimeEntry[];
-  assignees: Profile[];
-}
-
 export interface TaskDetail extends Task {
   project: Project;
   assignees: Profile[];
@@ -250,7 +244,7 @@ export interface TaskDetail extends Task {
 }
 
 export interface ProjectWithTasks extends Project {
-  tasks: TaskWithTimeEntries[];
+  tasks: Task[];
   team_members?: TeamMemberWithProfile[];
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -22,28 +22,81 @@ import {
 import { AddIcon, EditIcon } from '@chakra-ui/icons';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { dbOperations } from '@/lib/supabase';
-import { Task, Project, TimeEntryWithDetails, Profile } from '@/types/database.types';
+import { Task, Project, Profile } from '@/types/database.types';
+import { ProjectDetailResponse } from '@/types/api';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { useToastMessage } from '@/hooks/useToastMessage';
+import { useFetch } from '@/hooks/useFetch';
 import { ProjectEditModal } from '@/components/ProjectEditModal';
 import { TaskList } from '@/components/TaskList';
 import { ProjectTimeSummary } from '@/components/ProjectTimeSummary';
 import { ProjectCharts } from '@/components/ProjectCharts';
 import { ExportMenu } from '@/components/ExportMenu';
 
-interface TaskWithTimeEntries extends Task {
-  time_entries: TimeEntryWithDetails[];
+// タスク一覧用の型定義
+interface TaskWithAssignee {
+  id: string;
+  title: string;
+  description: string | null;
+  project_id: string;
+  team_id: string;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  assignee?: {
+    id: string;
+    full_name: string;
+  };
+}
+
+// 作業時間エントリー型
+interface TimeEntryWithUser {
+  id: string;
+  task_id: string | null;
+  project_id: string;
+  user_id: string;
+  start_time: string;
+  end_time: string | null;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  user: {
+    id: string;
+    full_name: string;
+  };
+  task?: {
+    id: string;
+    title: string;
+  } | null;
+}
+
+// 作業時間付きタスク型（グラフ用）
+interface TaskForAnalytics extends Task {
+  time_entries: TimeEntryWithUser[];
   assignees: Profile[];
 }
 
-interface TaskWithAssignees extends Task {
-  assignees: Profile[];
-}
+// タスクデータを変換するヘルパー関数
+const convertToTaskWithAssignee = (task: ProjectDetailResponse['tasks'][0]): TaskWithAssignee => {
+  return {
+    ...task,
+    assignee: task.assignees[0] ? {
+      id: task.assignees[0].id,
+      full_name: task.assignees[0].full_name,
+    } : undefined,
+  };
+};
 
-interface ProjectWithTasks extends Project {
-  tasks: TaskWithAssignees[];
-}
+// 作業時間付きタスクに変換するヘルパー関数
+const convertToTaskWithTimeEntries = (
+  task: ProjectDetailResponse['tasks'][0],
+  timeEntries: TimeEntryWithUser[]
+): TaskForAnalytics => {
+  return {
+    ...task,
+    time_entries: timeEntries,
+  };
+};
 
 export default function ProjectDetailPage() {
   const router = useRouter();
@@ -52,8 +105,9 @@ export default function ProjectDetailPage() {
   const projectId = id as string;
   const { loading, withLoading } = useLoadingState();
   const { showSuccess, showError } = useToastMessage();
-  const [project, setProject] = useState<ProjectWithTasks | null>(null);
-  const [timeEntryTasks, setTimeEntryTasks] = useState<TaskWithTimeEntries[]>([]);
+  const { fetchData } = useFetch();
+  const [project, setProject] = useState<ProjectDetailResponse | null>(null);
+  const [timeEntryTasks, setTimeEntryTasks] = useState<TaskForAnalytics[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [activeTab, setActiveTab] = useState(0);
   const [isLoadingCharts, setIsLoadingCharts] = useState(false);
@@ -61,15 +115,53 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     if (projectId) {
       loadProject();
-      loadTimeEntries();
     }
   }, [projectId]);
 
   const loadProject = async () => {
     await withLoading(async () => {
       try {
-        const data = await dbOperations.projects.getById(projectId);
-        setProject(data as ProjectWithTasks);
+        const response = await fetchData<{ data: ProjectDetailResponse }>(
+          async () => {
+            const res = await fetch(`/api/projects/${projectId}`);
+            if (!res.ok) {
+              throw new Error('プロジェクトの取得に失敗しました');
+            }
+            return res.json();
+          },
+          {
+            errorMessage: 'プロジェクトの読み込みに失敗しました'
+          }
+        );
+
+        if (response) {
+          setProject(response.data);
+
+          // 作業時間のあるタスクの設定
+          const timeEntriesMap = new Map<string, TimeEntryWithUser[]>();
+          
+          response.data.timeEntries.forEach(entry => {
+            if (!entry.task_id || !entry.user) return;
+            
+            const taskEntries = timeEntriesMap.get(entry.task_id) || [];
+            const timeEntryWithUser: TimeEntryWithUser = {
+              ...entry,
+              user_id: entry.user.id,
+              project_id: response.data.id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              user: entry.user,
+            };
+            taskEntries.push(timeEntryWithUser);
+            timeEntriesMap.set(entry.task_id, taskEntries);
+          });
+
+          const tasksWithTimeEntries = response.data.tasks.map(task => 
+            convertToTaskWithTimeEntries(task, timeEntriesMap.get(task.id) || [])
+          );
+
+          setTimeEntryTasks(tasksWithTimeEntries);
+        }
       } catch (error) {
         console.error('Error loading project:', error);
         showError('プロジェクトの読み込みに失敗しました');
@@ -78,36 +170,34 @@ export default function ProjectDetailPage() {
     });
   };
 
-  const loadTimeEntries = async () => {
-    try {
-      const data = await dbOperations.projects.getProjectTimeEntries(projectId);
-      const tasks = data.map(entry => ({
-        id: entry.task?.id || `no-task-${entry.id}`, // タスクがない場合はtime_entryのIDを使用して一意のIDを生成
-        title: entry.task?.title || 'タスクなし',
-        description: null,
-        project_id: entry.project_id,
-        team_id: project?.team_id || '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        due_date: null,
-        assignees: [], // 空の配列として初期化
-        time_entries: [entry],
-      }));
-      setTimeEntryTasks(tasks);
-    } catch (error) {
-      console.error('Error loading time entries:', error);
-      showError('作業時間データの読み込みに失敗しました');
-    }
-  };
-
   const handleProjectUpdate = async (updates: Partial<Project>) => {
     if (!project) return;
 
     await withLoading(async () => {
       try {
-        await dbOperations.projects.update(project.id, updates);
-        showSuccess('プロジェクトを更新しました');
-        loadProject();
+        const response = await fetchData<{ data: ProjectDetailResponse }>(
+          async () => {
+            const res = await fetch(`/api/projects/${project.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(updates),
+            });
+            if (!res.ok) {
+              throw new Error('プロジェクトの更新に失敗しました');
+            }
+            return res.json();
+          },
+          {
+            errorMessage: 'プロジェクトの更新に失敗しました',
+            successMessage: 'プロジェクトを更新しました'
+          }
+        );
+
+        if (response) {
+          setProject(response.data);
+        }
       } catch (error) {
         console.error('Error updating project:', error);
         showError('プロジェクトの更新に失敗しました');
@@ -117,11 +207,11 @@ export default function ProjectDetailPage() {
 
   const handleTabChange = async (index: number) => {
     setActiveTab(index);
-    // 分析タブが選択された時のデータ読み込み
+    // 分析タブが選択された時のデータ更新
     if (index === 2) {
       setIsLoadingCharts(true);
       try {
-        await loadTimeEntries();
+        await loadProject();
       } finally {
         setIsLoadingCharts(false);
       }
@@ -143,6 +233,8 @@ export default function ProjectDetailPage() {
       </Container>
     );
   }
+
+  const taskList = project.tasks.map(convertToTaskWithAssignee);
 
   return (
     <Container maxW="container.lg" py={8}>
@@ -200,7 +292,7 @@ export default function ProjectDetailPage() {
 
           <TabPanels>
             <TabPanel px={0}>
-              <TaskList tasks={project.tasks} />
+              <TaskList tasks={taskList} />
             </TabPanel>
 
             <TabPanel px={0}>

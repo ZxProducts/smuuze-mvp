@@ -12,7 +12,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { ChevronDownIcon, DownloadIcon } from '@chakra-ui/icons';
-import { TaskRow, TimeEntryRow } from '@/lib/supabase';
+import { TaskRow, TimeEntryRow } from '@/lib/supabase/supabase';
 import { DateRange } from './ChartDateFilter';
 import { filterTimeEntriesByDateRange } from '@/utils/dateUtils';
 

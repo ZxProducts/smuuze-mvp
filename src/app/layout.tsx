@@ -88,27 +88,27 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <AuthProvider>
-              <AuthGuard>
-                <TimeEntryProvider>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    minHeight: '100vh',
-                    background: 'var(--chakra-colors-gray-50)'
-                  }}>
+              <TimeEntryProvider>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: '100vh',
+                  background: 'var(--chakra-colors-gray-50)'
+                }}>
                   <Header />
-                  <main style={{ 
+                  <main style={{
                     flex: '1 0 auto',
                     display: 'flex',
                     flexDirection: 'column'
                   }}>
-                    {children}
+                    <AuthGuard>
+                      {children}
+                    </AuthGuard>
                   </main>
                   <Footer />
                   <PWAPrompt />
-                  </div>
-                </TimeEntryProvider>
-              </AuthGuard>
+                </div>
+              </TimeEntryProvider>
             </AuthProvider>
           </Providers>
         </ErrorBoundary>

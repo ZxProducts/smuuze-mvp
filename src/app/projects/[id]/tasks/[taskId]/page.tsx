@@ -17,12 +17,13 @@ import {
   WrapItem,
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 import { AuthGuard } from '@/components/AuthGuard';
 import { TaskEditModal } from '@/components/TaskEditModal';
 import { TimeEntryList } from '@/components/TimeEntryList';
 import { useTimeEntry } from '@/contexts/TimeEntryContext';
 import { TimeIcon } from '@chakra-ui/icons';
+import { apiClient } from '@/lib/api-client';
 import {
   TaskDetail,
   TeamMemberWithProfile,
@@ -33,7 +34,7 @@ import {
   Profile,
   Project,
   TaskCommentWithAuthor,
-  TaskHistory
+  TaskHistory,
 } from '@/types/database.types';
 
 interface TaskDetailPageProps {
@@ -76,7 +77,7 @@ const TimerControl: React.FC<{ task: TaskDetail }> = ({ task }) => {
       colorScheme={isCurrentTaskActive ? "red" : "brand"}
       onClick={() => isCurrentTaskActive ? stopTimer() : startTimer(task.project_id, task.id)}
       isLoading={isLoading}
-      isDisabled={isOtherTaskActive}
+      isDisabled={isOtherTaskActive || undefined}
     >
       {isCurrentTaskActive ? "作業を終了" : "作業を開始"}
     </Button>
@@ -119,7 +120,7 @@ export default function TaskDetailPage({ params: paramsPromise }: TaskDetailPage
         .from('time_entries')
         .select(`
           *,
-          user:profiles(id, full_name)
+          user:profiles(id, full_name, email)
         `)
         .eq('task_id', task.id)
         .gte('start_time', startOfWeek.toISOString())
@@ -154,7 +155,8 @@ export default function TaskDetailPage({ params: paramsPromise }: TaskDetailPage
             user_id,
             profiles:user_id (
               id,
-              full_name
+              full_name,
+              email
             )
           ),
           comments:task_comments (
@@ -197,7 +199,8 @@ export default function TaskDetailPage({ params: paramsPromise }: TaskDetailPage
           role,
           profiles!user_id (
             id,
-            full_name
+            full_name,
+            email
           )
         `)
         .eq('team_id', taskData.team_id);
@@ -212,6 +215,7 @@ export default function TaskDetailPage({ params: paramsPromise }: TaskDetailPage
           const profile: Profile = {
             id: profileData.id || '',
             full_name: profileData.full_name || '',
+            email: profileData.email || '',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -238,6 +242,7 @@ export default function TaskDetailPage({ params: paramsPromise }: TaskDetailPage
         assignees: taskData.task_assignees?.map((ta: any) => ({
           id: ta.profiles.id,
           full_name: ta.profiles.full_name,
+          email: ta.profiles.email,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })) || [],
@@ -292,7 +297,6 @@ export default function TaskDetailPage({ params: paramsPromise }: TaskDetailPage
     fetchTaskDetails();
   }, [fetchTaskDetails]);
 
-  // currentDateが変更されたときにtime_entriesを再取得
   useEffect(() => {
     if (task) {
       fetchTimeEntries(currentDate);
@@ -309,27 +313,12 @@ export default function TaskDetailPage({ params: paramsPromise }: TaskDetailPage
 
       if (taskError) throw taskError;
 
-      // 現在の担当者を削除
-      const { error: deleteError } = await supabase
-        .from('task_assignees')
-        .delete()
-        .eq('task_id', params.taskId);
+      // 担当者を更新（新しいAPIエンドポイントを使用）
+      const { error } = await apiClient.tasks.updateAssignees(params.taskId, {
+        assigneeIds
+      });
 
-      if (deleteError) throw deleteError;
-
-      // 新しい担当者を登録
-      if (assigneeIds.length > 0) {
-        const assigneeData = assigneeIds.map(userId => ({
-          task_id: params.taskId,
-          user_id: userId
-        }));
-
-        const { error: insertError } = await supabase
-          .from('task_assignees')
-          .insert(assigneeData);
-
-        if (insertError) throw insertError;
-      }
+      if (error) throw error;
 
       // 状態を更新（再取得）
       await fetchTaskDetails();

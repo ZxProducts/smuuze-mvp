@@ -1,4 +1,4 @@
-import { TaskRow, TimeEntryRow } from '@/lib/supabase';
+import { TaskRow, TimeEntryRow } from '@/lib/supabase/supabase';
 
 interface TimeEntryWithUser extends TimeEntryRow {
   user: {

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Team, TeamMemberWithProfile, Offer } from '@/types/database.types';
+import { useEffect, useState, useCallback } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { TeamResponse, TeamMemberResponse } from '@/types/api';
 import {
   Box,
   Container,
@@ -31,17 +31,12 @@ import { useRouter } from 'next/navigation';
 import TeamFormModal from '@/components/TeamFormModal';
 import CreateOfferModal from '@/components/CreateOfferModal';
 
-interface TeamDetails extends Team {
-  members: TeamMemberWithProfile[];
-  offers: Offer[];
-}
-
 interface TeamDetailsContentProps {
   teamId: string;
 }
 
 export default function TeamDetailsContent({ teamId }: TeamDetailsContentProps) {
-  const [team, setTeam] = useState<TeamDetails | null>(null);
+  const [team, setTeam] = useState<TeamResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const toast = useToast();
@@ -50,30 +45,19 @@ export default function TeamDetailsContent({ teamId }: TeamDetailsContentProps) 
     onOpen: onTeamModalOpen,
     onClose: onTeamModalClose,
   } = useDisclosure();
+
   const {
     isOpen: isOfferModalOpen,
     onOpen: onOfferModalOpen,
     onClose: onOfferModalClose,
   } = useDisclosure();
 
-  const fetchTeam = async () => {
+  const fetchTeam = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data: teamData, error: teamError } = await supabase
-        .from('teams')
-        .select(`
-          *,
-          members:team_members(
-            *,
-            profile:profiles(*)
-          ),
-          offers(*)
-        `)
-        .eq('id', teamId)
-        .single();
-
-      if (teamError) throw teamError;
-      setTeam(teamData);
+      const response = await apiClient.teams.get(teamId);
+      if (response.error) throw response.error;
+      setTeam(response.data);
     } catch (error) {
       console.error('Error fetching team:', error);
       toast({
@@ -83,11 +67,11 @@ export default function TeamDetailsContent({ teamId }: TeamDetailsContentProps) 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [teamId, toast]);
 
   useEffect(() => {
     fetchTeam();
-  }, [teamId]);
+  }, [fetchTeam]);
 
   const handleTeamUpdate = async () => {
     onTeamModalClose();
@@ -101,12 +85,8 @@ export default function TeamDetailsContent({ teamId }: TeamDetailsContentProps) 
 
   const handleMemberRemove = async (memberId: string) => {
     try {
-      const { error } = await supabase
-        .from('team_members')
-        .delete()
-        .eq('id', memberId);
-
-      if (error) throw error;
+      const response = await apiClient.teams.removeMember(teamId, memberId);
+      if (response.error) throw response.error;
 
       toast({
         title: 'メンバーを削除しました',
@@ -117,6 +97,7 @@ export default function TeamDetailsContent({ teamId }: TeamDetailsContentProps) 
       console.error('Error removing member:', error);
       toast({
         title: 'メンバーの削除に失敗しました',
+        description: error instanceof Error ? error.message : '予期しないエラーが発生しました',
         status: 'error',
       });
     }
@@ -169,7 +150,7 @@ export default function TeamDetailsContent({ teamId }: TeamDetailsContentProps) 
                 </Box>
 
                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                  {team.members.map((member) => (
+                  {team.members.map((member: TeamMemberResponse) => (
                     <Card key={member.id}>
                       <CardHeader>
                         <HStack justify="space-between">
@@ -177,7 +158,7 @@ export default function TeamDetailsContent({ teamId }: TeamDetailsContentProps) 
                             <Avatar
                               size="sm"
                               name={member.profile.full_name}
-                              src={member.profile.avatar_url || undefined}
+                              src={undefined}
                             />
                             <Stack spacing={0}>
                               <Text fontWeight="bold">

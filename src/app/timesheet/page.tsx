@@ -11,7 +11,7 @@ import {
   Center,
   Text,
 } from '@chakra-ui/react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 import { TimeEntryWithDetails } from '@/types/database.types';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimeEntryList } from '@/components/TimeEntryList';

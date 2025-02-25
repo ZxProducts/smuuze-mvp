@@ -15,7 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 import { TaskInsert, DatabaseTeamMemberResponse, TaskAssigneeInsert } from '@/types/database.types';
 import { PostgrestResponse } from '@supabase/supabase-js';
 

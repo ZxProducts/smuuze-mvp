@@ -13,7 +13,7 @@ import {
   Text,
   useToast,
 } from '@chakra-ui/react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 
 interface DeleteTeamModalProps {
   isOpen: boolean;

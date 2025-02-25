@@ -12,20 +12,18 @@ import {
 import { AddIcon } from '@chakra-ui/icons';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProjectRow, dbOperations, TaskStatistics } from '@/lib/supabase';
+import { ProjectResponse } from '@/types/api';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { useToastMessage } from '@/hooks/useToastMessage';
-
-interface ProjectWithStats extends ProjectRow {
-  taskStats: TaskStatistics;
-}
+import { useFetch } from '@/hooks/useFetch';
 
 export default function ProjectsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { loading, withLoading } = useLoadingState();
+  const { loading } = useLoadingState();
   const { showError } = useToastMessage();
-  const [projects, setProjects] = React.useState<ProjectWithStats[]>([]);
+  const { fetchData } = useFetch();
+  const [projects, setProjects] = React.useState<ProjectResponse[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -34,28 +32,22 @@ export default function ProjectsPage() {
   }, [user]);
 
   const loadProjects = async () => {
-    await withLoading(async () => {
-      try {
-        // プロジェクト一覧を取得
-        const projectsData = await dbOperations.projects.list();
-
-        // プロジェクトごとのタスク統計を取得
-        const projectsWithStats = await Promise.all(
-          projectsData.map(async (project) => {
-            const stats = await dbOperations.tasks.getProjectStats(project.id);
-            return {
-              ...project,
-              taskStats: stats,
-            };
-          })
-        );
-
-        setProjects(projectsWithStats);
-      } catch (error) {
-        showError('プロジェクトの読み込みに失敗しました');
-        console.error('Error loading projects:', error);
+    const response = await fetchData<{ data: ProjectResponse[] }>(
+      async () => {
+        const res = await fetch('/api/projects');
+        if (!res.ok) {
+          throw new Error('プロジェクトの取得に失敗しました');
+        }
+        return res.json();
+      },
+      {
+        errorMessage: 'プロジェクトの読み込みに失敗しました'
       }
-    });
+    );
+
+    if (response) {
+      setProjects(response.data);
+    }
   };
 
   return (
@@ -114,7 +106,7 @@ export default function ProjectsPage() {
 
               <Box textAlign="right">
                 <Text fontSize="sm" color="gray.600">
-                  タスク数: {project.taskStats.total}件
+                  タスク数: {project.tasks.total}件
                 </Text>
               </Box>
             </Box>

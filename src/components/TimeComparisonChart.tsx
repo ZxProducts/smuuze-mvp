@@ -32,7 +32,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { TimeEntryRow } from '@/lib/supabase';
+import { TimeEntryRow } from '@/lib/supabase/supabase';
 import { ChartStyles } from './ChartStyleSettings';
 import { DateRange } from './ChartDateFilter';
 import { filterTimeEntriesByDateRange } from '@/utils/dateUtils';

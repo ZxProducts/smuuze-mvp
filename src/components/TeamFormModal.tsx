@@ -1,6 +1,6 @@
 'use client';
 
-import { Team } from '@/types/database.types';
+import { Team } from '@/types/api';
 import {
   Modal,
   ModalOverlay,
@@ -18,7 +18,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useForm } from 'react-hook-form';
-import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { useCallback } from 'react';
 
 interface TeamFormModalProps {
@@ -49,46 +49,14 @@ export default function TeamFormModal({ isOpen, onClose, team, onSubmit }: TeamF
 
   const onFormSubmit = useCallback(async (data: TeamFormData) => {
     try {
-      const user = await supabase.auth.getUser();
-      if (!user.data.user) {
-        throw new Error('認証情報が見つかりません');
-      }
-
-      // プロフィールの存在確認
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.data.user.id)
-        .single();
-
-      if (profileError || !profile) {
-        // プロフィールが存在しない場合は作成
-        const { error: createProfileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: user.data.user.id,
-              full_name: user.data.user.email?.split('@')[0] || 'Unknown',
-              role: 'member',
-            },
-          ]);
-
-        if (createProfileError) {
-          throw createProfileError;
-        }
-      }
-
       if (team) {
         // チームの更新
-        const { error } = await supabase
-          .from('teams')
-          .update({
-            name: data.name,
-            description: data.description,
-          })
-          .eq('id', team.id);
+        const response = await apiClient.teams.update(team.id, {
+          name: data.name,
+          description: data.description,
+        });
 
-        if (error) throw error;
+        if (response.error) throw response.error;
 
         toast({
           title: 'チームを更新しました',
@@ -96,17 +64,12 @@ export default function TeamFormModal({ isOpen, onClose, team, onSubmit }: TeamF
         });
       } else {
         // 新規チーム作成
-        const { error: createTeamError } = await supabase
-          .from('teams')
-          .insert([
-            {
-              name: data.name,
-              description: data.description,
-              created_by: user.data.user.id,
-            },
-          ]);
+        const response = await apiClient.teams.create({
+          name: data.name,
+          description: data.description,
+        });
 
-        if (createTeamError) throw createTeamError;
+        if (response.error) throw response.error;
 
         toast({
           title: 'チームを作成しました',
@@ -121,7 +84,7 @@ export default function TeamFormModal({ isOpen, onClose, team, onSubmit }: TeamF
       console.error('Error submitting team:', error);
       toast({
         title: 'エラーが発生しました',
-        description: 'もう一度お試しください',
+        description: error instanceof Error ? error.message : 'もう一度お試しください',
         status: 'error',
       });
     }

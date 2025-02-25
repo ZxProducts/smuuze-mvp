@@ -11,7 +11,7 @@ import {
   Flex,
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { TaskRow } from '@/lib/supabase';
+import { TaskRow } from '@/lib/supabase/supabase';
 import { useTimeEntry } from '@/contexts/TimeEntryContext';
 import { TimeIcon } from '@chakra-ui/icons';
 

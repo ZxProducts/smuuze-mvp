@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useToast } from '@chakra-ui/react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { TimeEntry, TimeEntryInsert } from '@/types/database.types';
 

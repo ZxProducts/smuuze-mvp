@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import {
   Modal,
   ModalOverlay,
@@ -25,6 +25,8 @@ import {
   Stack,
 } from '@chakra-ui/react';
 import { useForm, Controller } from 'react-hook-form';
+import { useCallback } from 'react';
+import { CreateOfferRequest } from '@/types/api';
 
 interface CreateOfferModalProps {
   isOpen: boolean;
@@ -33,14 +35,7 @@ interface CreateOfferModalProps {
   onSubmit: () => void;
 }
 
-interface OfferFormData {
-  email: string;
-  hourly_rate: number;
-  daily_work_hours: number;
-  weekly_work_days: number;
-  meeting_included: boolean;
-  notes: string;
-}
+type OfferFormData = CreateOfferRequest;
 
 export default function CreateOfferModal({
   isOpen,
@@ -64,29 +59,25 @@ export default function CreateOfferModal({
     },
   });
 
-  const onFormSubmit = async (data: OfferFormData) => {
+  const onFormSubmit = useCallback(async (data: OfferFormData) => {
     try {
-      const user = await supabase.auth.getUser();
+      const response = await apiClient.teams.createOffer(teamId, {
+        email: data.email,
+        hourly_rate: data.hourly_rate,
+        daily_work_hours: data.daily_work_hours,
+        weekly_work_days: data.weekly_work_days,
+        meeting_included: data.meeting_included,
+        notes: data.notes || undefined,
+      });
 
-      const { error } = await supabase.from('offers').insert([
-        {
-          team_id: teamId,
-          email: data.email,
-          hourly_rate: data.hourly_rate,
-          daily_work_hours: data.daily_work_hours,
-          weekly_work_days: data.weekly_work_days,
-          meeting_included: data.meeting_included,
-          notes: data.notes || null,
-          status: 'pending',
-          created_by: user.data.user?.id,
-        },
-      ]);
+      if (response.error) {
+        throw response.error;
+      }
 
-      if (error) throw error;
+      console.log('Offer created:', response);
 
       toast({
-        title: 'オファーを作成しました',
-        description: '招待メールが送信されました',
+        title: response.data.message || 'メンバーを招待しました',
         status: 'success',
       });
 
@@ -97,16 +88,16 @@ export default function CreateOfferModal({
       console.error('Error creating offer:', error);
       toast({
         title: 'エラーが発生しました',
-        description: 'もう一度お試しください',
+        description: error instanceof Error ? error.message : 'もう一度お試しください',
         status: 'error',
       });
     }
-  };
+  }, [teamId, reset, onClose, onSubmit, toast]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     reset();
     onClose();
-  };
+  }, [reset, onClose]);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg">

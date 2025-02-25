@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Team, TeamMemberWithProfile } from '@/types/database.types';
+import { apiClient } from '@/lib/api-client';
+import { TeamResponse, AuthUser } from '@/types/api';
 import {
   Box,
   Button,
@@ -27,14 +27,10 @@ import TeamFormModal from '@/components/TeamFormModal';
 import DeleteTeamModal from '@/components/DeleteTeamModal';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface TeamWithMembers extends Team {
-  members: TeamMemberWithProfile[];
-}
-
 export default function TeamsPage() {
-  const [teams, setTeams] = useState<TeamWithMembers[]>([]);
+  const [teams, setTeams] = useState<TeamResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<TeamResponse | null>(null);
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const router = useRouter();
@@ -44,18 +40,9 @@ export default function TeamsPage() {
   const fetchTeams = async () => {
     setIsLoading(true);
     try {
-      const { data: teamsData, error: teamsError } = await supabase
-        .from('teams')
-        .select(`
-          *,
-          members:team_members(
-            *,
-            profile:profiles(*)
-          )
-        `);
-
-      if (teamsError) throw teamsError;
-      setTeams(teamsData || []);
+      const response = await apiClient.teams.list();
+      if (response.error) throw response.error;
+      setTeams(response.data);
     } catch (error) {
       console.error('Error fetching teams:', error);
       toast({
@@ -69,20 +56,22 @@ export default function TeamsPage() {
   };
 
   useEffect(() => {
-    fetchTeams();
-  }, []);
+    if (user) {
+      fetchTeams();
+    }
+  }, [user]);
 
   const handleTeamCreate = () => {
     setSelectedTeam(null);
     onFormOpen();
   };
 
-  const handleTeamEdit = (team: Team) => {
+  const handleTeamEdit = (team: TeamResponse) => {
     setSelectedTeam(team);
     onFormOpen();
   };
 
-  const handleTeamDelete = (team: Team) => {
+  const handleTeamDelete = (team: TeamResponse) => {
     setSelectedTeam(team);
     onDeleteOpen();
   };
@@ -91,6 +80,10 @@ export default function TeamsPage() {
     onFormClose();
     await fetchTeams();
   };
+
+  if (!user) {
+    return null; // ミドルウェアでリダイレクトされるため、一時的に非表示
+  }
 
   return (
     <Container maxW="container.xl" py={8}>
@@ -123,7 +116,7 @@ export default function TeamsPage() {
                         variant="ghost"
                         onClick={() => handleTeamEdit(team)}
                       />
-                      {user?.id === team.created_by && (
+                      {user.id === team.created_by && (
                         <IconButton
                           aria-label="Delete team"
                           icon={<DeleteIcon />}
@@ -153,7 +146,7 @@ export default function TeamsPage() {
                             <Avatar
                               size="sm"
                               name={member.profile.full_name}
-                              src={member.profile.avatar_url || undefined}
+                              src={undefined}
                             />
                           </Tooltip>
                         ))}

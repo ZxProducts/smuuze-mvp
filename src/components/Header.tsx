@@ -10,29 +10,46 @@ import {
   useBreakpointValue,
   Container,
   Text,
-  Divider,
 } from '@chakra-ui/react';
-import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
+import { HamburgerIcon, CloseIcon, TimeIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTimeEntry } from '@/contexts/TimeEntryContext';
 import { TaskMenu } from './TaskMenu';
-import { TimeIcon } from '@chakra-ui/icons';
 
 // アクティブなタイムエントリを表示するコンポーネント
 function ActiveTimeEntryDisplay() {
-  const { activeEntry } = useTimeEntry();
+  try {
+    const { activeEntry } = useTimeEntry();
 
-  if (!activeEntry) return null;
+    if (!activeEntry) return null;
+
+    return (
+      <Flex align="center" gap={2} bg="green.50" px={3} py={2} rounded="md">
+        <TimeIcon color="green.500" />
+        <Text fontSize="sm" color="gray.700">
+          {activeEntry.task?.title}
+        </Text>
+      </Flex>
+    );
+  } catch (error) {
+    console.error('TimeEntry error:', error);
+    return null;
+  }
+}
+
+// タイムエントリ関連のコンポーネントをまとめたコンポーネント
+function TimeEntryComponents() {
+  const { user } = useAuth();
+
+  if (!user) return null;
 
   return (
-    <Flex align="center" gap={2} bg="green.50" px={3} py={2} rounded="md">
-      <TimeIcon color="green.500" />
-      <Text fontSize="sm" color="gray.700">
-        {activeEntry.task?.title}
-      </Text>
-    </Flex>
+    <>
+      <ActiveTimeEntryDisplay />
+      <TaskMenu />
+    </>
   );
 }
 
@@ -151,9 +168,7 @@ export function Header() {
                     プロフィール
                   </Button>
                 </Link>
-                {/* アクティブなタイムエントリの表示 */}
-                <ActiveTimeEntryDisplay />
-                <TaskMenu />
+                <TimeEntryComponents />
                 <Button
                   variant="outline"
                   onClick={handleSignOut}
@@ -216,10 +231,7 @@ export function Header() {
                     </Button>
                   </Link>
                   <Box w="full">
-                    <ActiveTimeEntryDisplay />
-                  </Box>
-                  <Box w="full">
-                    <TaskMenu />
+                    <TimeEntryComponents />
                   </Box>
                   <Button
                     w="full"

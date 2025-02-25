@@ -18,7 +18,7 @@ import {
   useToast,
   Box,
 } from '@chakra-ui/react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 import {
   Task,
   Profile,

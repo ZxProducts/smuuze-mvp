@@ -1,30 +1,53 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Box, Text } from '@chakra-ui/react';
+import { Box, Spinner } from '@chakra-ui/react';
 
 // 認証が不要なパス
-const publicPaths = ['/', '/auth/signin', '/auth/signup', '/auth/verify', '/auth/forgot-password'];
+const PUBLIC_PATHS = ['/', '/auth/signin', '/auth/signup', '/auth/verify', '/auth/forgot-password'];
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (!loading) {
-      if (!user && !publicPaths.includes(pathname)) {
-        // 未認証の場合、ログインページへリダイレクト
-        router.push('/auth/signin');
-      } else if (user && publicPaths.includes(pathname)) {
-        // 認証済みの場合、publicPathsからダッシュボードへリダイレクト
-        router.push('/dashboard');
-      }
-    }
-  }, [user, loading, pathname, router]);
+  // 未認証状態で認証が必要なページにアクセスした場合
+  if (!user && !PUBLIC_PATHS.includes(pathname || '')) {
+    // ミドルウェアがリダイレクトを処理するため、
+    // ここではローディング表示のみ行う
+    return (
+      <Box
+        height="100vh"
+        width="100%"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        bg="white"
+      >
+        <Spinner
+          thickness="4px"
+          speed="0.65s"
+          emptyColor="gray.200"
+          color="brand.500"
+          size="xl"
+        />
+      </Box>
+    );
+  }
 
+  // 認証済み状態で公開ページにアクセスした場合
+  if (user && PUBLIC_PATHS.includes(pathname || '')) {
+    // ミドルウェアがリダイレクトを処理
+    return null;
+  }
+
+  // 認証が不要なパスの場合は、常にコンテンツを表示
+  if (PUBLIC_PATHS.includes(pathname || '')) {
+    return <>{children}</>;
+  }
+
+  // 認証済みユーザーの場合、または認証チェック中の場合
   if (loading) {
     return (
       <Box
@@ -35,11 +58,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         justifyContent="center"
         bg="white"
       >
-        <Text color="gray.500">読み込み中...</Text>
+        <Spinner
+          thickness="4px"
+          speed="0.65s"
+          emptyColor="gray.200"
+          color="brand.500"
+          size="xl"
+        />
       </Box>
     );
   }
 
-  // 認証チェックが完了し、適切なリダイレクトが行われた後にコンテンツを表示
+  // 認証済みユーザーの場合はコンテンツを表示
   return <>{children}</>;
 }

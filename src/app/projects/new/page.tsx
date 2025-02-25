@@ -17,7 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 import { AuthGuard } from '@/components/AuthGuard';
 import { ProjectInsert } from '@/types/database.types';
 

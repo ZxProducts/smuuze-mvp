@@ -35,7 +35,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import { TimeEntryRow } from '@/lib/supabase';
+import { TimeEntryRow } from '@/lib/supabase/supabase';
 import 'chartjs-adapter-date-fns';
 import { ja } from 'date-fns/locale';
 import { ChartDateFilter, PresetRange, DateRange } from './ChartDateFilter';

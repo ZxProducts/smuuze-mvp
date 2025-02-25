@@ -1,82 +1,149 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { usePathname, useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api-client';
+import { supabase } from '@/lib/supabase/supabase';
+import { AuthUser } from '@/types/api';
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// 認証が不要なパス
+const PUBLIC_PATHS = ['/', '/auth/signin', '/auth/signup', '/auth/verify', '/auth/forgot-password'];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // プロフィール情報の取得
+  const fetchProfile = async (sessionUser: AuthUser) => {
+    try {
+      const response = await apiClient.users.me();
+      if (response.error) {
+        console.error('プロフィール取得エラー:', response.error);
+        return sessionUser;
+      }
+      return {
+        ...sessionUser,
+        ...response.data
+      };
+    } catch (error) {
+      console.error('プロフィール取得中のエラー:', error);
+      return sessionUser;
+    }
+  };
+
+  // 認証状態に基づいてリダイレクト
+  const handleAuthRedirect = (currentUser: AuthUser | null) => {
+    // ミドルウェアがリダイレクトを処理するため、ここではリダイレクトを行わない
+    return;
+  };
 
   useEffect(() => {
-    // 現在のセッションを取得
-    const getCurrentSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoading(false);
+    let mounted = true;
+
+    // セッションの初期化
+    const initSession = async () => {
+      try {
+        setLoading(true);
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error('ユーザー取得エラー:', error);
+          if (mounted) {
+            setUser(null);
+          }
+          return;
+        }
+
+        if (authUser) {
+          const initialUser: AuthUser = {
+            id: authUser.id,
+            email: authUser.email!,
+          };
+          const userWithProfile = await fetchProfile(initialUser);
+          if (mounted) {
+            setUser(userWithProfile);
+          }
+        } else if (mounted) {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('セッション初期化中にエラーが発生:', error);
+        if (mounted) {
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    getCurrentSession();
+    initSession();
 
     // 認証状態の変更を監視
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        try {
+          setLoading(true);
+          
+          if (event === 'SIGNED_OUT' || !session) {
+            setUser(null);
+            return;
+          }
+
+          if (session?.user) {
+            const initialUser: AuthUser = {
+              id: session.user.id,
+              email: session.user.email!,
+            };
+            const userWithProfile = await fetchProfile(initialUser);
+            setUser(userWithProfile);
+          }
+        } catch (error) {
+          console.error('認証状態変更時のエラー:', error);
+          setUser(null);
+        } finally {
+          if (mounted) {
+            setLoading(false);
+          }
+        }
+      }
+    );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Error signing in:', error);
-      throw error;
-    }
-  };
-
-  const signUp = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      if (error) throw error;
-      // サインアップ後の確認メール送信メッセージを表示するページへ
-      router.push('/auth/verify');
-    } catch (error) {
-      console.error('Error signing up:', error);
-      throw error;
-    }
-  };
-
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'サインアウトに失敗しました。');
+      }
+
+      await supabase.auth.signOut();
+      setUser(null);
       router.push('/');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('サインアウトエラー:', error);
       throw error;
     }
   };
@@ -84,14 +151,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     loading,
-    signIn,
-    signUp,
     signOut,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

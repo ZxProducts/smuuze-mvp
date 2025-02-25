@@ -14,7 +14,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, ProfileRow } from '@/lib/supabase';
+import { supabase, ProfileRow } from '@/lib/supabase/supabase';
 
 export default function ProfilePage() {
   const { user } = useAuth();

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -8,16 +8,29 @@ import {
   Input,
   Heading,
   Text,
+  useToast,
 } from '@chakra-ui/react';
-import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
   const [error, setError] = useState('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const toast = useToast();
+  const { user } = useAuth();
+  const redirectPath = searchParams?.get('redirect') || '/dashboard';
+
+  // ユーザーが既にログインしている場合はリダイレクト
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,14 +38,49 @@ export default function SignIn() {
       setError('メールアドレスとパスワードを入力してください。');
       return;
     }
+  
+    if (email === undefined || password === undefined) {
+      setError('メールアドレスとパスワードが不正です。');
+      return;
+    }
 
     setLoading(true);
     setError('');
     
     try {
-      await signIn(email, password);
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'サインインに失敗しました。');
+      }
+
+      // サインイン成功時の通知
+      toast({
+        title: 'サインインしました',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      // サインイン成功時はリダイレクトパスへ移動
+      router.push(redirectPath);
     } catch (error) {
-      setError('メールアドレスまたはパスワードが正しくありません。');
+      setError(error instanceof Error ? error.message : 'サインインに失敗しました。');
+      toast({
+        title: 'エラー',
+        description: error instanceof Error ? error.message : 'サインインに失敗しました。',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -93,9 +141,10 @@ export default function SignIn() {
               colorScheme="brand"
               size="lg"
               width="full"
-              disabled={loading}
+              isLoading={loading}
+              loadingText="ログイン中..."
             >
-              {loading ? 'ログイン中...' : 'ログイン'}
+              ログイン
             </Button>
           </Box>
         </Box>

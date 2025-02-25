@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useFetch } from './useFetch';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabase';
 
 interface Task {
   id: string;
