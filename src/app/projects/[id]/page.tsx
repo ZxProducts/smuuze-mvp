@@ -40,6 +40,7 @@ interface TaskWithAssignee {
   description: string | null;
   project_id: string;
   team_id: string;
+  status: 'not_started' | 'in_progress' | 'completed';
   due_date: string | null;
   created_at: string;
   updated_at: string;
@@ -72,6 +73,7 @@ interface TimeEntryWithUser {
 
 // 作業時間付きタスク型（グラフ用）
 interface TaskForAnalytics extends Task {
+  status: 'not_started' | 'in_progress' | 'completed';
   time_entries: TimeEntryWithUser[];
   assignees: Profile[];
 }
@@ -80,6 +82,7 @@ interface TaskForAnalytics extends Task {
 const convertToTaskWithAssignee = (task: ProjectDetailResponse['tasks'][0]): TaskWithAssignee => {
   return {
     ...task,
+    status: task.status || 'not_started',
     assignee: task.assignees[0] ? {
       id: task.assignees[0].id,
       full_name: task.assignees[0].full_name,
@@ -94,6 +97,7 @@ const convertToTaskWithTimeEntries = (
 ): TaskForAnalytics => {
   return {
     ...task,
+    status: task.status || 'not_started',
     time_entries: timeEntries,
   };
 };

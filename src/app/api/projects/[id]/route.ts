@@ -11,11 +11,11 @@ export const dynamic = 'force-dynamic';
 // プロジェクト詳細取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const projectId = (await params).id;
-
   try {
+    const projectId = (await context.params).id;
+
     const supabase = await createClient();
 
     // セッションの取得

@@ -1,5 +1,5 @@
-import { 
-  ApiResponse, 
+import {
+  ApiResponse,
   Profile,
   Team,
   TeamResponse,
@@ -10,6 +10,9 @@ import {
   UpdateProfileRequest,
   UpdateTaskAssigneesRequest,
   MessageResponse,
+  TimeStats,
+  TeamMemberActivity,
+  Project,
 } from '@/types/api';
 
 interface ApiClientOptions {
@@ -80,6 +83,30 @@ class ApiClient {
     },
   };
 
+  // プロジェクト関連のAPI
+  projects = {
+    // プロジェクト一覧を取得
+    list: async (params?: { teamId?: string }): Promise<ApiResponse<Project[]>> => {
+      const query = params?.teamId ? `?teamId=${params.teamId}` : '';
+      return this.request<Project[]>(`/api/projects${query}`);
+    },
+  };
+
+  // タイムエントリー関連のAPI
+  timeEntries = {
+    // ダッシュボード用の統計情報を取得
+    getStats: async (params?: {
+      teamId?: string;
+      projectId?: string;
+    }): Promise<ApiResponse<TimeStats>> => {
+      const searchParams = new URLSearchParams();
+      if (params?.teamId) searchParams.append('teamId', params.teamId);
+      if (params?.projectId) searchParams.append('projectId', params.projectId);
+      const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+      return this.request<TimeStats>(`/api/time-entries/stats${query}`);
+    },
+  };
+
   // チーム関連のAPI
   teams = {
     // チーム一覧を取得
@@ -131,6 +158,11 @@ class ApiClient {
           method: 'DELETE',
         }
       );
+    },
+
+    // チームメンバーのアクティビティを取得
+    getActivities: async (): Promise<ApiResponse<TeamMemberActivity[]>> => {
+      return this.request<TeamMemberActivity[]>('/api/teams/activities');
     },
   };
 }

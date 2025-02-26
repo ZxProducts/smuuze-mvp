@@ -13,7 +13,7 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import { DownloadIcon, ChevronDownIcon } from '@chakra-ui/icons';
-import { TaskRow, TimeEntryRow } from '@/lib/supabase/supabase';
+import { Task, TimeEntryWithDetails } from '@/types/database.types';
 import {
   ExportType,
   exportTasks,
@@ -23,14 +23,10 @@ import {
   generateFileName,
 } from '@/utils/exportUtils';
 
-interface TimeEntryWithUser extends TimeEntryRow {
-  user: {
-    id: string;
-    full_name: string;
-  };
-}
+interface TimeEntryWithUser extends TimeEntryWithDetails {}
 
-interface TaskWithTimeEntries extends TaskRow {
+interface TaskWithTimeEntries extends Task {
+  status: 'not_started' | 'in_progress' | 'completed';
   time_entries: TimeEntryWithUser[];
 }
 

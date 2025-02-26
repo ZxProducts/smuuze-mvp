@@ -133,6 +133,7 @@ export default function CreateTaskForm({ projectId }: CreateTaskFormProps) {
         description: description || null,
         project_id: projectId,
         team_id: projectData.team_id,
+        status: 'not_started',
         due_date: dueDate || null
       };
 

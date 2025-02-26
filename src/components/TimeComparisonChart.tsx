@@ -32,7 +32,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { TimeEntryRow } from '@/lib/supabase/supabase';
+import { TimeEntryWithDetails } from '@/types/database.types';
 import { ChartStyles } from './ChartStyleSettings';
 import { DateRange } from './ChartDateFilter';
 import { filterTimeEntriesByDateRange } from '@/utils/dateUtils';
@@ -47,12 +47,7 @@ ChartJS.register(
   Legend
 );
 
-interface TimeEntryWithUser extends TimeEntryRow {
-  user: {
-    id: string;
-    full_name: string;
-  };
-}
+interface TimeEntryWithUser extends TimeEntryWithDetails {}
 
 interface TaskWithTimeEntries {
   id: string;
@@ -60,6 +55,7 @@ interface TaskWithTimeEntries {
   description: string | null;
   project_id: string;
   team_id: string;
+  status: 'not_started' | 'in_progress' | 'completed';
   due_date: string | null;
   created_at: string;
   updated_at: string;

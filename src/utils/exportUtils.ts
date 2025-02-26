@@ -1,13 +1,9 @@
-import { TaskRow, TimeEntryRow } from '@/lib/supabase/supabase';
+import { Task, TimeEntryWithDetails } from '@/types/database.types';
 
-interface TimeEntryWithUser extends TimeEntryRow {
-  user: {
-    id: string;
-    full_name: string;
-  };
-}
+interface TimeEntryWithUser extends TimeEntryWithDetails {}
 
-interface TaskWithTimeEntries extends TaskRow {
+interface TaskWithTimeEntries extends Task {
+  status: 'not_started' | 'in_progress' | 'completed';
   time_entries: TimeEntryWithUser[];
 }
 
@@ -46,15 +42,13 @@ function formatDuration(milliseconds: number): string {
 }
 
 // タスク一覧のエクスポート
-export function exportTasks(tasks: TaskRow[]): string {
-  const headers = ['タスクID', 'タイトル', '説明', '優先度', 'ステータス', '担当者', '期限'];
+export function exportTasks(tasks: Task[]): string {
+  const headers = ['タスクID', 'タイトル', '説明', 'ステータス', '期限'];
   const rows = tasks.map(task => [
     task.id,
     task.title,
     task.description || '',
-    task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低',
     task.status === 'completed' ? '完了' : task.status === 'in_progress' ? '進行中' : '未着手',
-    task.assigned_to || '',
     task.due_date ? new Date(task.due_date).toLocaleDateString('ja-JP') : ''
   ]);
 

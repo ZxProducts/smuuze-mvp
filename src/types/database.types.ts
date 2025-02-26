@@ -75,6 +75,7 @@ export interface BaseTask {
   description: string | null;
   project_id: string;
   team_id: string;
+  status: 'not_started' | 'in_progress' | 'completed';
   due_date: string | null;
 }
 
@@ -271,6 +272,7 @@ export interface DatabaseTaskResponse {
   project_id: string;
   team_id: string;
   due_date: string | null;
+  status: 'not_started' | 'in_progress' | 'completed';
   created_at: string;
   updated_at: string;
   project: {

@@ -10,6 +10,7 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -148,10 +149,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signUp = async (email: string, password: string) => {
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'サインアップに失敗しました。');
+      }
+
+      router.push('/auth/verify');
+    } catch (error) {
+      console.error('サインアップエラー:', error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     loading,
     signOut,
+    signUp,
   };
 
   return (

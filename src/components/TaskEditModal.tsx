@@ -81,7 +81,8 @@ export function TaskEditModal({
             team_id,
             profiles (
               id,
-              full_name
+              full_name,
+              email
             )
           `)
           .eq('team_id', project.team_id) as PostgrestResponse<DatabaseTeamMemberResponse>;
@@ -107,6 +108,7 @@ export function TaskEditModal({
             updated_at: new Date().toISOString(),
             profile: {
               id: member.profiles.id,
+              email: member.profiles.email,
               full_name: member.profiles.full_name,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()

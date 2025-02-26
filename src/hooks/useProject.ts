@@ -1,18 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFetch } from './useFetch';
 import { supabase } from '@/lib/supabase/supabase';
 
-interface Project {
-  id: string;
-  name: string;
-  description: string | null;
-  start_date: string;
-  end_date: string;
-  team_id: string;
-  created_at: string;
-}
+import { Project } from '@/types/database.types';
 
 interface Task {
   id: string;
@@ -59,13 +51,41 @@ const defaultTaskStats: TaskStatistics = {
   not_started: 0,
 };
 
-export function useProject(projectId: string): UseProjectReturn {
+export function useProject(projectId?: string): UseProjectReturn & { projects: Project[] } {
+  const [projects, setProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [taskStats, setTaskStats] = useState<TaskStatistics>(defaultTaskStats);
 
   const { loading, error, fetchData, mutateData } = useFetch();
+
+  useEffect(() => {
+    loadProjects();
+    if (projectId) {
+      loadProject();
+    }
+  }, [projectId]);
+
+  const loadProjects = async () => {
+    const { data } = await supabase
+      .from('projects')
+      .select(`
+        id,
+        name,
+        description,
+        team_id,
+        created_by,
+        start_date,
+        end_date,
+        created_at,
+        updated_at
+      `);
+    
+    if (data) {
+      setProjects(data);
+    }
+  };
 
   const calculateTaskStatistics = (statusList: TaskStatus[]) => {
     const stats = statusList.reduce(
@@ -81,6 +101,8 @@ export function useProject(projectId: string): UseProjectReturn {
   };
 
   const loadProject = async () => {
+    if (!projectId) return;
+
     const data = await fetchData(async () => {
       // プロジェクト詳細を取得
       const { data: projectData, error: projectError } = await supabase
@@ -137,7 +159,7 @@ export function useProject(projectId: string): UseProjectReturn {
   };
 
   const updateProject = async (updates: Partial<Omit<Project, 'id' | 'created_at'>>) => {
-    if (!project) return;
+    if (!projectId || !project) return;
 
     const result = await mutateData(async () => {
       const { data, error } = await supabase
@@ -160,6 +182,8 @@ export function useProject(projectId: string): UseProjectReturn {
   };
 
   const addTask = async (task: Omit<Task, 'id' | 'project_id'>) => {
+    if (!projectId) return;
+
     const result = await mutateData(async () => {
       const { data, error } = await supabase
         .from('tasks')
@@ -181,7 +205,7 @@ export function useProject(projectId: string): UseProjectReturn {
   };
 
   const loadTaskStatistics = async () => {
-    if (!project) return;
+    if (!projectId || !project) return;
 
     const { data: tasksData } = await supabase
       .from('tasks')
@@ -195,6 +219,7 @@ export function useProject(projectId: string): UseProjectReturn {
 
   return {
     project,
+    projects,
     tasks,
     members,
     taskStats,

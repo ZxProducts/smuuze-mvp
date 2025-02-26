@@ -3,65 +3,75 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
-import { TeamResponse } from '@/types/api';
+import { TimeStats } from '@/types/api';
 import {
   Box,
-  Button,
   Container,
-  Input,
-  Heading,
-  Text,
-  useDisclosure,
-  Card,
-  CardHeader,
-  CardBody,
-  SimpleGrid,
+  Grid,
+  GridItem,
   Stack,
   useToast,
 } from '@chakra-ui/react';
-import { AddIcon } from '@chakra-ui/icons';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import TeamFormModal from '@/components/TeamFormModal';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import TimeDistributionChart from '@/components/dashboard/TimeDistributionChart';
+import ProjectPieChart from '@/components/dashboard/ProjectPieChart';
+import ProjectDistributionList from '@/components/dashboard/ProjectDistributionList';
+import TeamActivities from '@/components/dashboard/TeamActivities';
 
 export default function DashboardPage() {
-  const [teams, setTeams] = useState<TeamResponse[]>([]);
+  const [timeStats, setTimeStats] = useState<TimeStats | null>(null);
+  console.log('Initial timeStats:', timeStats); // 初期値のログ
+  useEffect(() => {
+    console.log('timeStats updated:', timeStats); // 更新時のログ
+  }, [timeStats]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>();
+  const [selectedProjectId, setSelectedProjectId] = useState<string>();
   const { user } = useAuth();
   const toast = useToast();
-  const {
-    isOpen: isTeamModalOpen,
-    onOpen: onTeamModalOpen,
-    onClose: onTeamModalClose,
-  } = useDisclosure();
-  const router = useRouter();
-
-  const fetchTeams = async () => {
-    try {
-      const response = await apiClient.teams.list();
-      if (response.error) throw response.error;
-      setTeams(response.data);
-    } catch (error) {
-      console.error('Error fetching teams:', error);
-      toast({
-        title: 'チームの読み込みに失敗しました',
-        status: 'error',
-        duration: 5000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   useEffect(() => {
-    if (user) {
-      fetchTeams();
-    }
-  }, [user]);
+    const fetchTimeStats = async () => {
+      try {
+        console.log('Fetching time stats...');
+        const response = await apiClient.timeEntries.getStats({
+          teamId: selectedTeamId,
+          projectId: selectedProjectId,
+        });
+        console.log('Time stats response:', JSON.stringify(response, null, 2));
+        if (response.error) {
+          console.error('Response error:', response.error);
+          throw response.error;
+        }
+        console.log('Monthly distribution:', response.data?.monthlyDistribution);
+        setTimeStats(response.data);
+      } catch (error) {
+        console.error('Error fetching time stats:', error);
+        toast({
+          title: '統計情報の読み込みに失敗しました',
+          status: 'error',
+          duration: 5000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleTeamCreate = async () => {
-    onTeamModalClose();
-    await fetchTeams();
+    console.log('useEffect - user:', user); // ユーザー情報のログ
+    if (user) {
+      fetchTimeStats();
+    } else {
+      console.log('User not available yet'); // ユーザーが未取得の場合のログ
+    }
+  }, [user, toast, selectedTeamId, selectedProjectId]);
+
+  const handleTeamChange = (teamId: string) => {
+    setSelectedTeamId(teamId);
+    setSelectedProjectId(undefined);
+  };
+
+  const handleProjectChange = (projectId: string) => {
+    setSelectedProjectId(projectId);
   };
 
   if (!user) {
@@ -71,7 +81,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <Container maxW="container.xl" py={8}>
-        <Text>読み込み中...</Text>
+        <Box>読み込み中...</Box>
       </Container>
     );
   }
@@ -79,67 +89,42 @@ export default function DashboardPage() {
   return (
     <Container maxW="container.xl" py={8}>
       <Stack spacing={8}>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Stack>
-            <Heading size="lg">マイチーム</Heading>
-            <Text color="gray.600">
-              {user.full_name || user.email}さんが所属するチーム一覧
-            </Text>
-          </Stack>
-          <Button
-            leftIcon={<AddIcon />}
-            colorScheme="blue"
-            onClick={onTeamModalOpen}
-          >
-            新規チーム作成
-          </Button>
-        </Box>
+        <DashboardHeader
+          selectedTeamId={selectedTeamId}
+          selectedProjectId={selectedProjectId}
+          onTeamChange={handleTeamChange}
+          onProjectChange={handleProjectChange}
+        />
 
-        {teams.length === 0 ? (
-          <Card>
-            <CardBody>
-              <Text>所属しているチームはありません</Text>
-            </CardBody>
-          </Card>
-        ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-            {teams.map((team) => (
-              <Link href={`/teams/${team.id}`} key={team.id}>
-                <Card
-                  height="100%"
-                  cursor="pointer"
-                  _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                  transition="all 0.2s"
-                >
-                  <CardHeader>
-                    <Heading size="md">{team.name}</Heading>
-                  </CardHeader>
-                  <CardBody>
-                    <Stack spacing={4}>
-                      <Text color="gray.600">{team.description}</Text>
-                      <Box>
-                        <Text fontSize="sm" fontWeight="bold">
-                          メンバー数: {team.members.length}
-                        </Text>
-                        <Text fontSize="sm" color="gray.600">
-                          招待中: {team.offers.length}
-                        </Text>
-                      </Box>
-                    </Stack>
-                  </CardBody>
-                </Card>
-              </Link>
-            ))}
-          </SimpleGrid>
+        {timeStats && (
+          <>
+            {console.log('timeStats:', timeStats)}
+            <Box>
+              <TimeDistributionChart
+                monthlyDistribution={timeStats.monthlyDistribution}
+              />
+            </Box>
+
+            <Grid templateColumns={{ base: '1fr', md: '300px 1fr' }} gap={8}>
+              <GridItem>
+                <Stack spacing={6}>
+                  <ProjectPieChart
+                    totalTime={timeStats.totalTime}
+                    projectDistribution={timeStats.projectDistribution}
+                  />
+                  <ProjectDistributionList
+                    projectDistribution={timeStats.projectDistribution}
+                  />
+                </Stack>
+              </GridItem>
+
+              <GridItem>
+                <TeamActivities />
+              </GridItem>
+            </Grid>
+          </>
         )}
       </Stack>
-
-      <TeamFormModal
-        isOpen={isTeamModalOpen}
-        onClose={onTeamModalClose}
-        team={null}
-        onSubmit={handleTeamCreate}
-      />
     </Container>
   );
 }

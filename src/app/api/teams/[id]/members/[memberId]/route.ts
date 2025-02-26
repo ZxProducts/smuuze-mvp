@@ -14,8 +14,9 @@ interface ErrorResponse {
 // チームメンバーを削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; memberId: string } }
+  context: { params: Promise<{ id: string; memberId: string }> }
 ) {
+  const params = await context.params;
   const teamId = params.id;
   const memberId = params.memberId;
 

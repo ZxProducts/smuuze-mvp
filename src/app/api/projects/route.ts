@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/supabase-server';
-import {
-  ProjectResponse,
-  ErrorResponse,
-  ApiResponse
-} from '@/types/api';
+import { Project, ErrorResponse, ApiResponse } from '@/types/api';
 
+// 常に最新のデータを取得するように設定
 export const dynamic = 'force-dynamic';
 
-// プロジェクト一覧取得
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const { searchParams } = new URL(request.url);
+    const teamId = searchParams.get('teamId');
 
     // セッションの取得
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -23,68 +21,47 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(errorResponse, { status: 401 });
     }
 
-    // ユーザーが所属するチームのIDを取得
-    const { data: memberTeams, error: memberError } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', user.id);
-
-    if (memberError) {
-      console.error('チームメンバー情報取得エラー:', memberError);
-      const errorResponse: ErrorResponse = {
-        error: 'チーム情報の取得に失敗しました',
-        status: 500,
-        details: memberError
-      };
-      return NextResponse.json(errorResponse, { status: 500 });
-    }
-
-    const teamIds = memberTeams.map(mt => mt.team_id);
-
-    // プロジェクト情報を取得
-    const { data: projects, error: projectsError } = await supabase
+    // プロジェクトとタスク数を取得
+    let query = supabase
       .from('projects')
       .select(`
         *,
-        tasks (
-          id
-        )
-      `)
-      .in('team_id', teamIds);
+        tasks:tasks(count)
+      `);
 
-    if (projectsError) {
-      console.error('プロジェクト情報取得エラー:', projectsError);
+    // チームIDでフィルタリング
+    if (teamId) {
+      query = query.eq('team_id', teamId);
+    }
+
+    const { data, error } = await query;
+
+    // タスク数を含むレスポンスデータを作成
+    const projectsWithStats = data?.map(project => ({
+      ...project,
+      tasks: {
+        total: project.tasks?.[0]?.count || 0
+      }
+    })) || [];
+
+    if (error) {
+      console.error('プロジェクト一覧取得エラー:', error);
       const errorResponse: ErrorResponse = {
-        error: 'プロジェクト情報の取得に失敗しました',
+        error: 'プロジェクト一覧の取得に失敗しました',
         status: 500,
-        details: projectsError
+        details: error
       };
       return NextResponse.json(errorResponse, { status: 500 });
     }
 
-    // プロジェクトごとのタスク統計を計算
-    const projectsWithStats = projects.map(project => {
-      const tasks = {
-        total: project.tasks.length
-      };
-
-      // tasksプロパティを削除（統計情報に変換済みのため）
-      const { tasks: _, ...projectWithoutTasks } = project;
-
-      return {
-        ...projectWithoutTasks,
-        tasks
-      };
-    });
-
-    const response: ApiResponse<ProjectResponse[]> = {
+    const response: ApiResponse<Project[]> = {
       data: projectsWithStats
     };
 
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('プロジェクト一覧取得処理エラー:', error);
+    console.error('予期しないエラー:', error);
     const errorResponse: ErrorResponse = {
       error: '予期しないエラーが発生しました',
       status: 500,

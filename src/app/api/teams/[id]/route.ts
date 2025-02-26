@@ -13,11 +13,11 @@ export const dynamic = 'force-dynamic';
 // チーム情報取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id } = await params;
+    const { id } = await context.params;
 
     // セッションの取得
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -89,11 +89,11 @@ export async function GET(
 // チーム情報更新
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id } = params;
+    const { id } = await context.params;
     const updates: UpdateTeamRequest = await request.json();
 
     // セッションの取得
@@ -167,11 +167,11 @@ export async function PUT(
 // チーム削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id } = params;
+    const { id } = await context.params;
 
     // セッションの取得
     const { data: { user }, error: authError } = await supabase.auth.getUser();

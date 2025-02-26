@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function SignIn() {
+function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -156,5 +156,13 @@ export default function SignIn() {
         </Box>
       </Box>
     </Container>
+  );
+}
+
+export default function SignIn() {
+  return (
+    <Suspense>
+      <SignInForm />
+    </Suspense>
   );
 }

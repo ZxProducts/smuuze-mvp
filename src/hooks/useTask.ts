@@ -1,17 +1,10 @@
+'use client';
+
 import { useState } from 'react';
 import { useFetch } from './useFetch';
 import { supabase } from '@/lib/supabase/supabase';
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'not_started' | 'in_progress' | 'completed';
-  assigned_to: string | null;
-  due_date: string | null;
-  project_id: string;
-  created_at: string;
-}
+import { DatabaseTaskResponse, Profile } from '@/types/database.types';
 
 interface Comment {
   id: string;
@@ -24,27 +17,50 @@ interface Comment {
   };
 }
 
+interface TaskAssignee {
+  profiles: Profile;
+}
+
 interface UseTaskReturn {
-  task: Task | null;
+  task: DatabaseTaskResponse | null;
+  tasks: DatabaseTaskResponse[];
   comments: Comment[];
   loading: boolean;
+  isLoading: boolean;
   error: Error | null;
   loadTask: () => Promise<void>;
-  updateTask: (updates: Partial<Omit<Task, 'id' | 'created_at'>>) => Promise<void>;
-  updateTaskStatus: (status: Task['status']) => Promise<void>;
+  updateTask: (updates: Partial<Omit<DatabaseTaskResponse, 'id' | 'created_at'>>) => Promise<void>;
+  updateTaskStatus: (status: 'not_started' | 'in_progress' | 'completed') => Promise<void>;
   addComment: (content: string) => Promise<void>;
 }
 
-export function useTask(taskId: string): UseTaskReturn {
-  const [task, setTask] = useState<Task | null>(null);
+export function useTask(taskId?: string): UseTaskReturn {
+  const [task, setTask] = useState<DatabaseTaskResponse | null>(null);
+  const [tasks, setTasks] = useState<DatabaseTaskResponse[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const { loading, error, fetchData, mutateData } = useFetch();
 
   const loadTask = async () => {
+    if (!taskId) {
+      return;
+    }
+
     const taskData = await fetchData(async () => {
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
-        .select('*')
+        .select(`
+          *,
+          assignees:task_assignees(
+            profiles(*)
+          ),
+          time_entries(
+            *,
+            user:profiles(
+              id,
+              full_name
+            )
+          )
+        `)
         .eq('id', taskId)
         .maybeSingle();
 
@@ -61,7 +77,7 @@ export function useTask(taskId: string): UseTaskReturn {
         .order('created_at', { ascending: true });
 
       return {
-        task: taskData as Task,
+        task: taskData as DatabaseTaskResponse,
         comments: (commentsData || []) as Comment[],
       };
     }, {
@@ -74,7 +90,41 @@ export function useTask(taskId: string): UseTaskReturn {
     }
   };
 
-  const updateTask = async (updates: Partial<Omit<Task, 'id' | 'created_at'>>) => {
+  const loadTasks = async () => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          assignees:task_assignees(
+            profiles(*)
+          ),
+          time_entries(
+            *,
+            user:profiles(
+              id,
+              full_name
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
+  
+      if (error) {
+        console.error('タスク一覧の取得に失敗しました:', error);
+        return;
+      }
+  
+      if (data) {
+        // 形式を変換
+        const formattedTasks = data.map(task => ({
+          ...task,
+          assignees: task.assignees?.map((a: TaskAssignee) => a.profiles) || [],
+          time_entries: task.time_entries || []
+        })) as DatabaseTaskResponse[];
+        setTasks(formattedTasks);
+      }
+};
+
+  const updateTask = async (updates: Partial<Omit<DatabaseTaskResponse, 'id' | 'created_at'>>) => {
     if (!task) return;
 
     const result = await mutateData(async () => {
@@ -88,13 +138,32 @@ export function useTask(taskId: string): UseTaskReturn {
       // 更新後のタスク全体を取得
       const { data: updatedTask, error: fetchError } = await supabase
         .from('tasks')
-        .select('*')
+        .select(`
+          *,
+          assignees:task_assignees(
+            profiles(*)
+          ),
+          time_entries(
+            *,
+            user:profiles(
+              id,
+              full_name
+            )
+          )
+        `)
         .eq('id', taskId)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
       if (!updatedTask) throw new Error('タスクが見つかりません');
-      return updatedTask as Task;
+      
+      const formattedTask = {
+        ...updatedTask,
+        assignees: updatedTask.assignees?.map((a: TaskAssignee) => a.profiles) || [],
+        time_entries: updatedTask.time_entries || []
+      } as DatabaseTaskResponse;
+      
+      return formattedTask;
     }, {
       successMessage: 'タスクを更新しました',
       errorMessage: 'タスクの更新に失敗しました',
@@ -105,11 +174,13 @@ export function useTask(taskId: string): UseTaskReturn {
     }
   };
 
-  const updateTaskStatus = async (status: Task['status']) => {
+  const updateTaskStatus = async (status: 'not_started' | 'in_progress' | 'completed') => {
     await updateTask({ status });
   };
 
   const addComment = async (content: string) => {
+    if (!taskId) return;
+
     const result = await mutateData(async () => {
       const { data: comment, error } = await supabase
         .from('task_comments')
@@ -140,8 +211,10 @@ export function useTask(taskId: string): UseTaskReturn {
 
   return {
     task,
+    tasks,
     comments,
     loading,
+    isLoading: loading,
     error,
     loadTask,
     updateTask,

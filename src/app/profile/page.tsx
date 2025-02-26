@@ -14,13 +14,14 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase, ProfileRow } from '@/lib/supabase/supabase';
+import { supabase } from '@/lib/supabase/supabase';
+import { Profile } from '@/types/database.types';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [fullName, setFullName] = useState('');
 
   useEffect(() => {

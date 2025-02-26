@@ -12,14 +12,9 @@ import {
   Text,
   Tooltip,
 } from '@chakra-ui/react';
-import { TimeEntryRow } from '@/lib/supabase/supabase';
+import { TimeEntryWithDetails } from '@/types/database.types';
 
-interface TimeEntryWithUser extends TimeEntryRow {
-  user: {
-    id: string;
-    full_name: string;
-  };
-}
+interface TimeEntryWithUser extends TimeEntryWithDetails {}
 
 interface TimeEntrySummaryProps {
   entries: TimeEntryWithUser[];

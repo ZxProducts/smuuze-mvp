@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const teamId = (await params).id;
+  const teamId = (await context.params).id;
 
   try {
     const supabase = await createClient();

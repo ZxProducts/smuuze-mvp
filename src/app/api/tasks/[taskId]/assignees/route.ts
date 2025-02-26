@@ -7,10 +7,10 @@ export const dynamic = 'force-dynamic';
 // タスクの担当者を更新
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { taskId: string } }
+  context: { params: Promise<{ taskId: string }> }
 ) {
   try {
-    const taskId = params.taskId;
+    const taskId = (await context.params).taskId;
     const { assigneeIds } = await request.json();
 
     if (!Array.isArray(assigneeIds)) {

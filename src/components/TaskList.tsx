@@ -11,11 +11,12 @@ import {
   Flex,
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { TaskRow } from '@/lib/supabase/supabase';
+import { Task } from '@/types/database.types';
 import { useTimeEntry } from '@/contexts/TimeEntryContext';
 import { TimeIcon } from '@chakra-ui/icons';
 
-interface TaskWithAssignee extends TaskRow {
+interface TaskWithAssignee extends Task {
+  status: 'not_started' | 'in_progress' | 'completed';
   assignee?: {
     id: string;
     full_name: string;

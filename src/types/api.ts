@@ -9,6 +9,30 @@ export type Offer = Tables['offers']['Row'];
 export type Project = Tables['projects']['Row'];
 export type Task = Tables['tasks']['Row'];
 
+// ダッシュボード関連の型定義
+export interface TimeStats {
+  totalTime: string;
+  topProject: {
+    name: string;
+    time: string;
+  };
+  monthlyDistribution: {
+    month: number;
+    totalTime: string;
+    byProject: {
+      project_id: string;
+      project_name: string;
+      time: string;
+    }[];
+  }[];
+  projectDistribution: {
+    project_id: string;
+    project_name: string;
+    time: string;
+    percentage: number;
+  }[];
+}
+
 // プロジェクト関連の型定義
 export interface TaskStatistics {
   total: number;
@@ -30,6 +54,7 @@ export interface ProjectDetailResponse extends Project {
     description: string | null;
     project_id: string;
     team_id: string;
+    status: 'not_started' | 'in_progress' | 'completed';
     due_date: string | null;
     created_at: string;
     updated_at: string;
@@ -99,6 +124,19 @@ export interface SignupResponse {
     email: string;
     full_name?: string;
   };
+}
+
+// チームアクティビティ関連の型定義
+export interface TeamMemberActivity {
+  id: string;
+  full_name: string;
+  latest_activity: {
+    project_name: string;
+    description: string;
+    timestamp: string;
+  } | null;
+  total_time: string;
+  time_percentage: number;
 }
 
 // チーム関連

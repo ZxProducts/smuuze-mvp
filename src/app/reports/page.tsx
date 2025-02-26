@@ -21,16 +21,18 @@ import { useTask } from '@/hooks/useTask';
 import { ProjectCharts } from '@/components/ProjectCharts';
 import { AuthGuard } from '@/components/AuthGuard';
 import { useQueryParams } from '@/hooks/useQueryParams';
-import { getDefaultDateRange } from '@/utils/dateUtils';
-import { Project, Task } from '@/types/database.types';
+import { Project, DatabaseTaskResponse } from '@/types/database.types';
+
+// DatabaseTaskResponseをTaskWithTimeEntriesとして扱えるように変換する型
+type TaskWithTimeEntries = DatabaseTaskResponse;
 
 export default function ReportsPage() {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const { getParam } = useQueryParams();
   const [selectedProjectId, setSelectedProjectId] = useState<string>(getParam('projectId') || '');
 
-  const { data: projects = [] } = useProject();
-  const { data: tasks, isLoading } = useTask(selectedProjectId || undefined);
+  const { projects = [] } = useProject();
+  const { tasks = [], isLoading } = useTask(selectedProjectId || undefined);
 
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newProjectId = e.target.value;
@@ -60,7 +62,7 @@ export default function ReportsPage() {
                 placeholder="プロジェクトを選択"
                 maxW="300px"
               >
-                {projects.map((project: Project) => (
+                {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
                   </option>
