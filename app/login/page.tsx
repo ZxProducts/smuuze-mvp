@@ -10,7 +10,7 @@ export default function LoginPage({
       <div className="w-full max-w-md">
         <div className="flex justify-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white text-2xl font-bold">
-            C
+            S
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
