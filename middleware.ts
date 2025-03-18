@@ -12,6 +12,11 @@ function setCorsHeaders(request: NextRequest, response: NextResponse) {
     'https://smuuze-mvp-khaki.vercel.app'
   ];
   
+  // 開発環境では localhost を許可
+  if (process.env.NODE_ENV === 'development') {
+    allowedOrigins.push('http://localhost:3000');
+  }
+  
   // リクエストのオリジンが許可リストに含まれている場合、そのオリジンを許可
   if (allowedOrigins.includes(origin)) {
     response.headers.set('Access-Control-Allow-Origin', origin);
@@ -20,11 +25,14 @@ function setCorsHeaders(request: NextRequest, response: NextResponse) {
   }
   
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   return response;
 }
 
 export async function middleware(request: NextRequest) {
+  // デバッグ用：リクエストのCookieを確認
+  console.log('Middleware - リクエストCookie:', request.cookies.getAll().map(c => c.name));
+  
   // API ルートへのリクエストかどうかを確認
   const isApiRoute = request.nextUrl.pathname.startsWith('/api');
   
@@ -34,24 +42,47 @@ export async function middleware(request: NextRequest) {
     return setCorsHeaders(request, response);
   }
   
+  // 認証が不要なAPIルート
+  const publicApiRoutes = [
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/reset-password',
+    '/api/auth/update-password',
+    '/api/offers'
+  ];
+  
+  // 認証が必要なAPIルートかどうかを確認
+  const isProtectedApiRoute = isApiRoute && 
+    !publicApiRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+  
   // API ルートへのリクエストの場合は、認証チェックを行い、
   // 認証されていない場合は JSON エラーレスポンスを返す
-  if (isApiRoute && !request.nextUrl.pathname.startsWith('/api/auth')) {
-    const response = await updateSession(request);
-    
-    // updateSession 関数内で認証チェックが行われ、
-    // ユーザーが認証されていない場合は /login にリダイレクトされる
-    // API ルートの場合は、リダイレクトではなく JSON エラーレスポンスを返す
-    if (response.status === 307 && response.headers.get('location')?.includes('/login')) {
-      const response = NextResponse.json(
-        { error: '認証が必要です' },
-        { status: 401 }
-      );
+  if (isProtectedApiRoute) {
+    try {
+      const response = await updateSession(request);
+      
+      // updateSession 関数内で認証チェックが行われ、
+      // ユーザーが認証されていない場合は /login にリダイレクトされる
+      // API ルートの場合は、リダイレクトではなく JSON エラーレスポンスを返す
+      if (response.status === 307 && response.headers.get('location')?.includes('/login')) {
+        console.log('Middleware - 認証エラー:', request.nextUrl.pathname);
+        const errorResponse = NextResponse.json(
+          { error: '認証が必要です' },
+          { status: 401 }
+        );
+        return setCorsHeaders(request, errorResponse);
+      }
+      
+      // API ルートの場合は、レスポンスにCORSヘッダーを追加
       return setCorsHeaders(request, response);
+    } catch (error) {
+      console.error('Middleware - エラー:', error);
+      const errorResponse = NextResponse.json(
+        { error: '認証処理中にエラーが発生しました' },
+        { status: 500 }
+      );
+      return setCorsHeaders(request, errorResponse);
     }
-    
-    // API ルートの場合は、レスポンスにCORSヘッダーを追加
-    return setCorsHeaders(request, response);
   }
   
   // 通常のルートの場合は、従来通りの処理を行う
