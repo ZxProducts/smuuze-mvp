@@ -5,6 +5,6 @@ export default function MyTasksPage() {
 }
 
 export const metadata = {
-  title: "マイタスク | Smuuze",
+  title: "マイタスク | smuuze",
   description: "自分に割り当てられたタスクを管理し、タイムトラッキングを開始・終了できます。",
 }

@@ -5,7 +5,7 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "Clockify - 日本語版",
+  title: "smuuze",
   description: "時間追跡アプリケーション",
     generator: 'v0.dev'
 }
