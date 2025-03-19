@@ -9,7 +9,8 @@ function setCorsHeaders(request: NextRequest, response: NextResponse) {
   // 許可するオリジンのリスト（必要に応じて追加）
   const allowedOrigins = [
     'https://smuuze-i11t2l894-smuuze-project.vercel.app',
-    'https://smuuze-mvp-khaki.vercel.app'
+    'https://smuuze-mvp-khaki.vercel.app',
+    'https://smuuze-mvp.vercel.app'
   ];
   
   // 開発環境では localhost を許可
@@ -20,9 +21,15 @@ function setCorsHeaders(request: NextRequest, response: NextResponse) {
   // リクエストのオリジンが許可リストに含まれている場合、そのオリジンを許可
   if (allowedOrigins.includes(origin)) {
     response.headers.set('Access-Control-Allow-Origin', origin);
-    // credentials: 'include' モードをサポートするために必要
-    response.headers.set('Access-Control-Allow-Credentials', 'true');
+  } else {
+    // オリジンが許可リストにない場合でも、Vercelのドメインからのリクエストを許可
+    if (origin.endsWith('.vercel.app')) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+    }
   }
+  
+  // credentials: 'include' モードをサポートするために必要
+  response.headers.set('Access-Control-Allow-Credentials', 'true');
   
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');

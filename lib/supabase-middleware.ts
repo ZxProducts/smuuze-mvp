@@ -5,11 +5,18 @@ export async function updateSession(request: NextRequest) {
   // デバッグ用：リクエストのCookieを確認
   console.log('updateSession - リクエストCookie:', request.cookies.getAll().map(c => `${c.name}=${c.value.substring(0, 10)}...`));
 
+  // 既存のCookieをコピーして新しいレスポンスを作成
   let supabaseResponse = NextResponse.next({
-    request,
+    request: {
+      headers: request.headers,
+    },
   })
+  
+  // レスポンスヘッダーにCORS設定を追加
+  supabaseResponse.headers.set('Access-Control-Allow-Credentials', 'true')
 
   try {
+    // Cookieの処理を改善
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,21 +29,24 @@ export async function updateSession(request: NextRequest) {
             cookiesToSet.forEach(({ name, value, options }) => {
               // デバッグ用：設定するCookieを確認
               console.log(`Cookie設定: ${name}=${value.substring(0, 10)}...`, options);
-              request.cookies.set(name, value)
-            })
-            
-            supabaseResponse = NextResponse.next({
-              request,
-            })
-            
-            cookiesToSet.forEach(({ name, value, options }) => {
-              supabaseResponse.cookies.set(name, value, {
+              
+              // リクエストとレスポンスの両方にCookieを設定
+              request.cookies.set({
+                name,
+                value,
+                ...options
+              })
+              
+              // レスポンスにCookieを設定
+              supabaseResponse.cookies.set({
+                name,
+                value,
                 ...options,
                 // Cookieの設定を明示的に指定
                 path: options?.path || '/',
                 httpOnly: options?.httpOnly !== false,
-                secure: process.env.NODE_ENV === 'production' && options?.secure !== false,
-                sameSite: options?.sameSite || 'lax',
+                secure: true, // 常にsecureを有効に
+                sameSite: 'none', // クロスサイトリクエストを許可
               })
             })
           },

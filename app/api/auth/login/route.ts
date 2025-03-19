@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: data.session.expires_in,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true, // 常にsecureを有効に
+        sameSite: 'none', // クロスサイトリクエストを許可
       });
       
       // リフレッシュトークンをCookieに保存
@@ -105,7 +106,8 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: 60 * 60 * 24 * 30, // 30日間
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true, // 常にsecureを有効に
+        sameSite: 'none', // クロスサイトリクエストを許可
       });
       
       // Supabaseセッションを明示的に設定
