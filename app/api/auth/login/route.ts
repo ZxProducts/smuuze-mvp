@@ -97,8 +97,9 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: data.session.expires_in,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // 本番環境ではsecureを有効に
-        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none', // 開発環境ではnone、本番環境ではlax
+        secure: true, // 常にsecureを有効に（Vercel環境はHTTPS）
+        sameSite: 'none', // クロスサイトリクエストを許可
+        partitioned: true, // Partitioned属性を追加（Chrome 134以降のプライバシー対応）
       });
       
       // リフレッシュトークンをCookieに保存
@@ -106,8 +107,9 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: 60 * 60 * 24 * 30, // 30日間
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // 本番環境ではsecureを有効に
-        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none', // 開発環境ではnone、本番環境ではlax
+        secure: true, // 常にsecureを有効に（Vercel環境はHTTPS）
+        sameSite: 'none', // クロスサイトリクエストを許可
+        partitioned: true, // Partitioned属性を追加（Chrome 134以降のプライバシー対応）
       });
       
       // Supabaseセッションを明示的に設定

@@ -46,8 +46,10 @@ export async function updateSession(request: NextRequest) {
                 path: options?.path || '/',
                 httpOnly: options?.httpOnly !== false,
                 // 環境に応じてsecureとsameSiteを設定
-                secure: process.env.NODE_ENV === 'production', // 本番環境ではsecureを有効に
-                sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none', // 開発環境ではnone、本番環境ではlax
+                secure: true, // 常にsecureを有効に（Vercel環境はHTTPS）
+                sameSite: 'none', // クロスサイトリクエストを許可
+                // Partitioned属性を追加（Chrome 134以降のプライバシー対応）
+                partitioned: true,
               })
             })
           },

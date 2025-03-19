@@ -32,13 +32,8 @@ function setCorsHeaders(request: NextRequest, response: NextResponse) {
   response.headers.set('Access-Control-Allow-Credentials', 'true');
   
   // Cookieの属性を明示的に設定するためのヘッダー
-  if (process.env.NODE_ENV === 'production') {
-    // 本番環境ではSameSite=Laxを使用
-    response.headers.append('Set-Cookie', 'SameSite=Lax; Secure; Path=/');
-  } else {
-    // 開発環境ではSameSite=Noneを使用（クロスサイトリクエストを許可）
-    response.headers.append('Set-Cookie', 'SameSite=None; Secure; Path=/');
-  }
+  // クロスサイトリクエストを許可し、Partitioned属性を追加
+  response.headers.append('Set-Cookie', 'SameSite=None; Secure; Path=/; Partitioned');
   
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
