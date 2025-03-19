@@ -45,8 +45,9 @@ export async function updateSession(request: NextRequest) {
                 // Cookieの設定を明示的に指定
                 path: options?.path || '/',
                 httpOnly: options?.httpOnly !== false,
-                secure: true, // 常にsecureを有効に
-                sameSite: 'none', // クロスサイトリクエストを許可
+                // 環境に応じてsecureとsameSiteを設定
+                secure: process.env.NODE_ENV === 'production', // 本番環境ではsecureを有効に
+                sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none', // 開発環境ではnone、本番環境ではlax
               })
             })
           },

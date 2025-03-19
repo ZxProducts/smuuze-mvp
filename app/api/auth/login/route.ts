@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: data.session.expires_in,
         httpOnly: true,
-        secure: true, // 常にsecureを有効に
-        sameSite: 'none', // クロスサイトリクエストを許可
+        secure: process.env.NODE_ENV === 'production', // 本番環境ではsecureを有効に
+        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none', // 開発環境ではnone、本番環境ではlax
       });
       
       // リフレッシュトークンをCookieに保存
@@ -106,8 +106,8 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: 60 * 60 * 24 * 30, // 30日間
         httpOnly: true,
-        secure: true, // 常にsecureを有効に
-        sameSite: 'none', // クロスサイトリクエストを許可
+        secure: process.env.NODE_ENV === 'production', // 本番環境ではsecureを有効に
+        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none', // 開発環境ではnone、本番環境ではlax
       });
       
       // Supabaseセッションを明示的に設定
