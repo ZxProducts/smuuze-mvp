@@ -50,6 +50,8 @@ export async function updateSession(request: NextRequest) {
                 sameSite: 'none', // クロスサイトリクエストを許可
                 // Partitioned属性を追加（Chrome 134以降のプライバシー対応）
                 partitioned: true,
+                // Vercel環境ではドメインを設定
+                domain: process.env.NODE_ENV === 'production' ? 'vercel.app' : undefined,
               })
             })
           },

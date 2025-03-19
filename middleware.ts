@@ -33,7 +33,13 @@ function setCorsHeaders(request: NextRequest, response: NextResponse) {
   
   // Cookieの属性を明示的に設定するためのヘッダー
   // クロスサイトリクエストを許可し、Partitioned属性を追加
-  response.headers.append('Set-Cookie', 'SameSite=None; Secure; Path=/; Partitioned');
+  if (process.env.NODE_ENV === 'production') {
+    // 本番環境ではドメインを設定
+    response.headers.append('Set-Cookie', 'SameSite=None; Secure; Path=/; Partitioned; Domain=vercel.app');
+  } else {
+    // 開発環境ではドメインなし
+    response.headers.append('Set-Cookie', 'SameSite=None; Secure; Path=/; Partitioned');
+  }
   
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');

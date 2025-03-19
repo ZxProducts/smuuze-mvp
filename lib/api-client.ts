@@ -16,6 +16,28 @@ export async function fetchApi<T>(
     const headers = new Headers(options.headers);
     headers.set('Content-Type', 'application/json');
     
+    // Storage Access APIを使用してクロスサイトCookieへのアクセスを要求
+    try {
+      // Chrome 134以降ではStorage Access APIが必要
+      if (typeof document !== 'undefined' && document.requestStorageAccess) {
+        try {
+          // ストレージアクセスが既に許可されているか確認
+          const hasAccess = await document.hasStorageAccess();
+          if (!hasAccess) {
+            // ストレージアクセスを要求
+            await document.requestStorageAccess();
+            console.log('Storage Access granted');
+          }
+        } catch (storageError) {
+          console.warn('Storage Access API error:', storageError);
+          // エラーが発生しても処理を続行
+        }
+      }
+    } catch (e) {
+      // Storage Access APIが利用できない場合は無視
+      console.warn('Storage Access API not available');
+    }
+    
     // リクエストを実行（credentialsを含める）
     const response = await fetch(`${baseUrl}${path}`, {
       ...options,

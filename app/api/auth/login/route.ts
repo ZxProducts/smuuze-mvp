@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
         secure: true, // 常にsecureを有効に（Vercel環境はHTTPS）
         sameSite: 'none', // クロスサイトリクエストを許可
         partitioned: true, // Partitioned属性を追加（Chrome 134以降のプライバシー対応）
+        domain: process.env.NODE_ENV === 'production' ? 'vercel.app' : undefined, // Vercel環境ではドメインを設定
       });
       
       // リフレッシュトークンをCookieに保存
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
         secure: true, // 常にsecureを有効に（Vercel環境はHTTPS）
         sameSite: 'none', // クロスサイトリクエストを許可
         partitioned: true, // Partitioned属性を追加（Chrome 134以降のプライバシー対応）
+        domain: process.env.NODE_ENV === 'production' ? 'vercel.app' : undefined, // Vercel環境ではドメインを設定
       });
       
       // Supabaseセッションを明示的に設定
