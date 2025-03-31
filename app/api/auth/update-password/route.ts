@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { password } = await request.json();
+    const { password, code } = await request.json();
     
     if (!password) {
       return NextResponse.json(
@@ -13,11 +13,28 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const supabase = createServerSupabaseClient();
+    if (!code) {
+      return NextResponse.json(
+        { error: 'リセットコードは必須です' },
+        { status: 400 }
+      );
+    }
     
-    // パスワードを更新
+    const supabase = await createServerSupabaseClient();
+    
+    // パスワードリセットトークンを使用してセッションを作成
+    const { data, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+    
+    if (sessionError) {
+      return NextResponse.json(
+        { error: sessionError.message },
+        { status: 400 }
+      );
+    }
+    
+    // セッションが作成できたら、パスワードを更新
     const { error } = await supabase.auth.updateUser({
-      password,
+      password: password,
     });
     
     if (error) {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,7 +37,21 @@ export function UpdatePasswordForm() {
     },
   });
 
+  const searchParams = useSearchParams();
+  const code = searchParams.get('code');
+
+  useEffect(() => {
+    if (!code) {
+      setError('無効なリセットリンクです。再度パスワードリセットを行ってください。');
+    }
+  }, [code]);
+
   const onSubmit = async (data: UpdatePasswordFormValues) => {
+    if (!code) {
+      setError('無効なリセットリンクです。再度パスワードリセットを行ってください。');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -49,6 +63,7 @@ export function UpdatePasswordForm() {
         },
         body: JSON.stringify({
           password: data.password,
+          code: code
         }),
       });
       
