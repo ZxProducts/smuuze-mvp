@@ -3,6 +3,8 @@ import { Header } from "@/components/header"
 import { get } from "@/lib/api"
 import { TeamContent } from "./team-content"
 
+export const dynamic = 'force-dynamic';
+
 // チームメンバーの型定義
 interface TeamMember {
   id: string;
