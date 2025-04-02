@@ -1040,7 +1040,7 @@ export function ReportsContent() {
                     <Share2 className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56">
+                <PopoverContent className="w-auto" align="end">
                   <div className="space-y-2">
                     <h4 className="font-medium">レポートを共有</h4>
                     <div className="grid gap-1">
@@ -1059,7 +1059,7 @@ export function ReportsContent() {
                             });
                         }}
                       >
-                        リンクをコピー
+                        リンクをコピー（実装予定）
                       </Button>
                       <Button 
                         variant="outline" 
@@ -1071,7 +1071,7 @@ export function ReportsContent() {
                           window.location.href = `mailto:?subject=${subject}&body=${body}`;
                         }}
                       >
-                        メールで共有
+                        メールで共有（実装予定）
                       </Button>
                     </div>
                   </div>
