@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 
+export const dynamic = 'force-dynamic';
+
 // 時間をフォーマットする関数（秒数から時:分:秒形式に変換）
 function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);

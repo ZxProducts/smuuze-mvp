@@ -1,4 +1,7 @@
+import { Suspense } from 'react';
 import { UpdatePasswordForm } from './update-password-form';
+
+export const dynamic = 'force-dynamic';
 
 export default function UpdatePasswordPage() {
   return (
@@ -16,7 +19,9 @@ export default function UpdatePasswordPage() {
           新しいパスワードを入力してください。
         </p>
         <div className="mt-8">
-          <UpdatePasswordForm />
+          <Suspense fallback={<div>Loading...</div>}>
+            <UpdatePasswordForm />
+          </Suspense>
         </div>
       </div>
     </div>

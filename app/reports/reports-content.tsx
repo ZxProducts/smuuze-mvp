@@ -739,6 +739,96 @@ export function ReportsContent() {
     
     return "0";
   };
+
+  const handleExportOperationReport = async () => {
+    const fileName = `稼働レポート ${format(dateRange.from, 'yyyy/MM/dd')} - ${format(dateRange.to, 'yyyy/MM/dd')}`;
+    await fetch('/api/export/operation_report/', {
+      method: 'POST',
+      body: JSON.stringify({
+        reportData: reportData,
+      }),
+    }).then((response) => {
+      response.blob().then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        document.body.appendChild(a);
+        a.download = `${fileName}.pdf`;
+        a.href = url;
+        a.click();
+        a.remove();
+      });
+    }).catch((error) => {
+      console.error(error);
+    });
+  };
+
+  const handleExportOperationReportForTimeline = async () => {
+    const fileName = `稼働レポート（タイムライン） ${format(dateRange.from, 'yyyy/MM/dd')} - ${format(dateRange.to, 'yyyy/MM/dd')}`;
+    await fetch('/api/export/operation_report_timeline/', {
+      method: 'POST',
+      body: JSON.stringify({
+        reportData: reportData,
+      }),
+    }).then((response) => {
+      response.blob().then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        document.body.appendChild(a);
+        a.download = `${fileName}.pdf`;
+        a.href = url;
+        a.click();
+        a.remove();
+      });
+    }).catch((error) => {
+      console.error(error);
+    });
+  };
+
+  const handleExportOperationReportWithAmount = async () => {
+    const fileName = `稼働レポート（金額あり） ${format(dateRange.from, 'yyyy/MM/dd')} - ${format(dateRange.to, 'yyyy/MM/dd')}`;
+    await fetch('/api/export/operation_report_with_amount/', {
+      method: 'POST',
+      body: JSON.stringify({
+        reportData: reportData,
+      }),
+    }).then((response) => {
+      response.blob().then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        document.body.appendChild(a);
+        a.download = `${fileName}.pdf`;
+        a.href = url;
+        a.click();
+        a.remove();
+      });
+    }).catch((error) => {
+      console.error(error);
+    });
+  };
+
+  const handleExportInvoice = async () => {
+    console.log('請求書のエクスポート');
+    const fileName = `請求書 ${format(dateRange.from, 'yyyy/MM/dd')} - ${format(dateRange.to, 'yyyy/MM/dd')}`;
+    await fetch('/api/export/invoice/', {
+      method: 'POST',
+      body: JSON.stringify({
+        method: 'invoice',
+        reportData: reportData,
+      }),
+    }).then((response) => {
+      response.blob().then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        document.body.appendChild(a);
+        a.download = `${fileName}.pdf`;
+        a.href = url;
+        a.click();
+        a.remove();
+      });
+    }).catch((error) => {
+      console.error(error);
+    });
+  };
   
   return (
     <div className="relative">
@@ -1021,9 +1111,68 @@ export function ReportsContent() {
               <span className="font-medium">合計: {reportData?.totalTime ? formatTimeHHMM(reportData.totalTime) : "00:00"}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm">
+              {/* <Button
+                variant="ghost" size="sm">
                 エクスポート
-              </Button>
+              </Button> */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" title="エクスポート">
+                    エクスポート
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto" align="end">
+                  <div className="space-y-2">
+                    <h4 className="font-medium">帳票出力</h4>
+                    <div className="grid gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="justify-start"
+                        onClick={() => {
+                          // 稼働レポートのエクスポート
+                          handleExportOperationReport();
+                        }}
+                      >
+                        稼働レポート
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="justify-start"
+                        onClick={() => {
+                          // 稼働レポートのエクスポート
+                          handleExportOperationReportForTimeline();
+                        }}
+                      >
+                        稼働レポート（タイムライン）
+                      </Button>
+                      {/* <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="justify-start"
+                        onClick={() => {
+                          // 稼働レポート（金額あり）のエクスポート
+                          handleExportOperationReportWithAmount();
+                        }}
+                      >
+                        稼働レポート（金額あり）
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="justify-start"
+                        onClick={() => {
+                          // 請求書のエクスポート
+                          handleExportInvoice();
+                        }}
+                      >
+                        請求書
+                      </Button> */}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -1040,7 +1189,7 @@ export function ReportsContent() {
                     <Share2 className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56">
+                <PopoverContent className="w-auto" align="end">
                   <div className="space-y-2">
                     <h4 className="font-medium">レポートを共有</h4>
                     <div className="grid gap-1">
@@ -1059,7 +1208,7 @@ export function ReportsContent() {
                             });
                         }}
                       >
-                        リンクをコピー
+                        リンクをコピー（実装予定）
                       </Button>
                       <Button 
                         variant="outline" 
@@ -1071,7 +1220,7 @@ export function ReportsContent() {
                           window.location.href = `mailto:?subject=${subject}&body=${body}`;
                         }}
                       >
-                        メールで共有
+                        メールで共有（実装予定）
                       </Button>
                     </div>
                   </div>
