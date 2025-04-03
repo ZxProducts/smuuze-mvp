@@ -4,13 +4,19 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { MoreHorizontal, UserMinus, Shield, ShieldOff } from 'lucide-react';
+import { MoreHorizontal, UserMinus, Shield, ShieldOff, Settings } from 'lucide-react';
+import { EditMemberDialog } from './edit-member-dialog';
 
 interface TeamMember {
   id: string;
   user_id: string;
   team_id: string;
   role: string;
+  hourly_rate?: number;
+  daily_work_hours?: number;
+  weekly_work_days?: number;
+  meeting_included?: boolean;
+  notes?: string;
   profiles: {
     full_name: string;
     email: string;
@@ -27,6 +33,7 @@ interface MemberActionsProps {
 export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpdated }: MemberActionsProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -120,6 +127,14 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
             </DropdownMenuItem>
           )}
           
+          <DropdownMenuItem 
+            onClick={() => setIsEditDialogOpen(true)}
+            className="text-gray-600"
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            <span>メンバー情報を編集</span>
+          </DropdownMenuItem>
+          
           <DropdownMenuSeparator />
           
           <DropdownMenuItem 
@@ -190,6 +205,15 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* メンバー情報編集ダイアログ */}
+      <EditMemberDialog 
+        member={member} 
+        teamId={teamId} 
+        onMemberUpdated={onMemberUpdated}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+      />
     </>
   );
 }

@@ -152,14 +152,9 @@ export function TimeTrackerContent() {
       
       try {
         // 自分に割り当てられたタスクを取得
-        const response = await get<TasksResponse>(`/api/tasks?projectId=${selectedProjectId}`)
+        const response = await get<TasksResponse>(`/api/tasks?projectId=${selectedProjectId}&assignedToMe=true`)
         if (response.tasks) {
-          // 自分に割り当てられたタスクのみをフィルタリング
-          const myTasks = response.tasks.filter(task => 
-            task.task_assignees && 
-            task.task_assignees.some(assignee => assignee.profiles.id === assignee.user_id)
-          )
-          setAvailableTasks(myTasks)
+          setAvailableTasks(response.tasks)
           
           // タスクが変わるので選択をリセット
           setSelectedTaskId("")
@@ -352,14 +347,9 @@ export function TimeTrackerContent() {
     try {
       // タスク一覧を取得
       if (entry.project_id) {
-        const response = await get<TasksResponse>(`/api/tasks?projectId=${entry.project_id}`);
+        const response = await get<TasksResponse>(`/api/tasks?projectId=${entry.project_id}&assignedToMe=true`);
         if (response.tasks) {
-          // 自分に割り当てられたタスクのみをフィルタリング
-          const myTasks = response.tasks.filter(task => 
-            task.task_assignees && 
-            task.task_assignees.some(assignee => assignee.profiles.id === assignee.user_id)
-          );
-          setAvailableTasks(myTasks);
+          setAvailableTasks(response.tasks);
         }
       }
       
@@ -692,14 +682,9 @@ export function TimeTrackerContent() {
                 onValueChange={async (value) => {
                   // プロジェクトが変更されたら、そのプロジェクトのタスクを取得
                   try {
-                    const response = await get<TasksResponse>(`/api/tasks?projectId=${value}`);
+                    const response = await get<TasksResponse>(`/api/tasks?projectId=${value}&assignedToMe=true`);
                     if (response.tasks) {
-                      // 自分に割り当てられたタスクのみをフィルタリング
-                      const myTasks = response.tasks.filter(task => 
-                        task.task_assignees && 
-                        task.task_assignees.some(assignee => assignee.profiles.id === assignee.user_id)
-                      );
-                      setAvailableTasks(myTasks);
+                      setAvailableTasks(response.tasks);
                     }
                     
                     // プロジェクト情報を取得

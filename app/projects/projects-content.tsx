@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { CreateProjectDialog } from './create-project-dialog';
 import { useCallback } from 'react';
 import { EditProjectDialog } from './edit-project-dialog';
+import { ProjectMembersDialog } from './project-members-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
@@ -18,7 +19,6 @@ interface Project {
   client_name?: string;
   total_hours?: string;
   progress?: string;
-  public?: boolean;
   team_id: string;
   created_at: string;
   updated_at?: string;
@@ -303,34 +303,45 @@ export function ProjectsContent() {
                   <span>{project.team_name}</span>
                 </div>
                 <div>{projectTimes[project.id] || '00時間00分'}</div>
-                <div className="text-right">
+                <div className="text-right flex items-center justify-end">
                   {project.can_edit && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          onClick={() => setEditingProject(project)}
-                        >
-                          <Edit2 className="mr-2 h-4 w-4" />
-                          <span>編集</span>
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuItem 
-                          onClick={() => {
-                            setProjectToDelete(project);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          <span>削除</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <>
+                      <ProjectMembersDialog 
+                        project={project} 
+                        onMembersUpdated={() => {
+                          fetchProjects();
+                          fetchProjectTimes();
+                        }}
+                        canEdit={true}
+                      />
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-1">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => setEditingProject(project)}
+                          >
+                            <Edit2 className="mr-2 h-4 w-4" />
+                            <span>編集</span>
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setProjectToDelete(project);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>削除</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
                   )}
                 </div>
               </div>

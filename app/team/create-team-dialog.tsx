@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 interface CreateTeamDialogProps {
   onTeamCreated: () => void;
@@ -16,6 +17,11 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [prefecture, setPrefecture] = useState('');
+  const [city, setCity] = useState('');
+  const [address1, setAddress1] = useState('');
+  const [address2, setAddress2] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -39,6 +45,11 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
         body: JSON.stringify({
           name,
           description,
+          postal_code: postalCode,
+          prefecture,
+          city,
+          address1,
+          address2,
         }),
       });
       
@@ -50,6 +61,11 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
       // フォームをリセット
       setName('');
       setDescription('');
+      setPostalCode('');
+      setPrefecture('');
+      setCity('');
+      setAddress1('');
+      setAddress2('');
       
       // モーダルを閉じる
       setOpen(false);
@@ -100,6 +116,63 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
                 rows={3}
               />
             </div>
+            
+            <Separator className="my-2" />
+            
+            <div className="grid gap-2">
+              <h3 className="text-sm font-medium">請求先住所</h3>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="postalCode">郵便番号</Label>
+                <Input
+                  id="postalCode"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="例: 123-4567"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="prefecture">都道府県</Label>
+                <Input
+                  id="prefecture"
+                  value={prefecture}
+                  onChange={(e) => setPrefecture(e.target.value)}
+                  placeholder="例: 東京都"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="city">市区町村</Label>
+                <Input
+                  id="city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="例: 渋谷区"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="address1">住所1</Label>
+                <Input
+                  id="address1"
+                  value={address1}
+                  onChange={(e) => setAddress1(e.target.value)}
+                  placeholder="例: 渋谷1-2-3"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="address2">住所2</Label>
+                <Input
+                  id="address2"
+                  value={address2}
+                  onChange={(e) => setAddress2(e.target.value)}
+                  placeholder="例: 渋谷ビル101"
+                />
+              </div>
+            </div>
+            
             {error && (
               <div className="text-sm text-red-500">
                 {error}

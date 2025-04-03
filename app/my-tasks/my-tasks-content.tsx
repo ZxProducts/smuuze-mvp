@@ -81,15 +81,11 @@ export function MyTasksContent() {
   React.useEffect(() => {
     const fetchMyTasks = async () => {
       try {
-        // すべてのタスクを取得
-        const response = await get<TasksResponse>('/api/tasks')
+        // 自分に割り当てられたタスクを取得
+        const response = await get<TasksResponse>('/api/tasks?assignedToMe=true')
         if (response.tasks) {
-          // 自分に割り当てられたタスクのみをフィルタリング
-          const assignedTasks = response.tasks.filter(task => 
-            task.task_assignees && 
-            task.task_assignees.some(assignee => assignee.profiles.id === assignee.user_id)
-          )
-          setMyTasks(assignedTasks)
+          // APIから返されたタスクをそのまま設定
+          setMyTasks(response.tasks)
         }
       } catch (error: any) {
         console.error("タスクの取得に失敗しました", error)

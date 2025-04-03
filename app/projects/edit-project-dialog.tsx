@@ -20,7 +20,6 @@ interface Project {
   team_id: string;
   start_date?: string;
   end_date?: string;
-  public?: boolean;
 }
 
 interface EditProjectDialogProps {
@@ -45,7 +44,7 @@ export function EditProjectDialog({ project, onProjectUpdated, canEdit, open: ex
   const [endDate, setEndDate] = useState<Date | undefined>(
     project.end_date ? new Date(project.end_date) : undefined
   );
-  const [isPublic, setIsPublic] = useState(project.public || false);
+  // public フィールドはデータベースに存在しないため削除
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [startDateOpen, setStartDateOpen] = useState(false);
@@ -57,7 +56,6 @@ export function EditProjectDialog({ project, onProjectUpdated, canEdit, open: ex
     setDescription(project.description || '');
     setStartDate(project.start_date ? new Date(project.start_date) : undefined);
     setEndDate(project.end_date ? new Date(project.end_date) : undefined);
-    setIsPublic(project.public || false);
   }, [project]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,8 +84,7 @@ export function EditProjectDialog({ project, onProjectUpdated, canEdit, open: ex
           name,
           description,
           startDate: startDate?.toISOString(),
-          endDate: endDate?.toISOString() || null,
-          public: isPublic
+          endDate: endDate?.toISOString() || null
         }),
       });
       
@@ -205,18 +202,7 @@ export function EditProjectDialog({ project, onProjectUpdated, canEdit, open: ex
               />
             </div>
             
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="isPublic"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <Label htmlFor="isPublic" className="text-sm font-normal">
-                パブリックプロジェクト（すべてのチームメンバーが閲覧可能）
-              </Label>
-            </div>
+            {/* public フィールドはデータベースに存在しないため削除 */}
             
             {error && (
               <div className="text-sm text-red-500">

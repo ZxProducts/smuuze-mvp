@@ -9,17 +9,17 @@ export async function GET(
   try {
     const supabase = await createServerSupabaseClient();
     
-    // 認証済みユーザーのセッションを取得
-    const { data: { session } } = await supabase.auth.getSession();
+    // 認証済みユーザーを取得（より安全な方法）
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!session) {
+    if (userError || !user) {
       return NextResponse.json(
         { error: '認証が必要です' },
         { status: 401 }
       );
     }
     
-    const userId = session.user.id;
+    const userId = user.id;
     const projectId = params.id;
     
     // プロジェクトを取得
@@ -36,6 +36,13 @@ export async function GET(
       .single();
     
     if (projectError) {
+      if (projectError.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'プロジェクトが見つかりません' },
+          { status: 404 }
+        );
+      }
+      
       return NextResponse.json(
         { error: projectError.message },
         { status: 400 }
@@ -48,19 +55,19 @@ export async function GET(
       .select('*')
       .eq('user_id', userId)
       .eq('team_id', project.team_id)
-      .maybeSingle();
+      .single();
     
     if (teamError) {
+      if (teamError.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'このプロジェクトにアクセスする権限がありません' },
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json(
         { error: teamError.message },
         { status: 400 }
-      );
-    }
-    
-    if (!teamMember) {
-      return NextResponse.json(
-        { error: 'このプロジェクトにアクセスする権限がありません' },
-        { status: 403 }
       );
     }
     
@@ -81,17 +88,17 @@ export async function PUT(
   try {
     const supabase = await createServerSupabaseClient();
     
-    // 認証済みユーザーのセッションを取得
-    const { data: { session } } = await supabase.auth.getSession();
+    // 認証済みユーザーを取得（より安全な方法）
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!session) {
+    if (userError || !user) {
       return NextResponse.json(
         { error: '認証が必要です' },
         { status: 401 }
       );
     }
     
-    const userId = session.user.id;
+    const userId = user.id;
     const projectId = params.id;
     
     // プロジェクトを取得
@@ -102,6 +109,13 @@ export async function PUT(
       .single();
     
     if (projectError) {
+      if (projectError.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'プロジェクトが見つかりません' },
+          { status: 404 }
+        );
+      }
+      
       return NextResponse.json(
         { error: projectError.message },
         { status: 400 }
@@ -116,10 +130,17 @@ export async function PUT(
       .eq('team_id', project.team_id)
       .single();
     
-    if (teamError || !teamMember) {
+    if (teamError) {
+      if (teamError.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'このチームにアクセスする権限がありません' },
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
-        { status: 403 }
+        { error: teamError.message },
+        { status: 400 }
       );
     }
     
@@ -140,29 +161,31 @@ export async function PUT(
     if (description !== undefined) updateFields.description = description;
     if (startDate !== undefined) updateFields.start_date = startDate;
     if (endDate !== undefined) updateFields.end_date = endDate;
+    // public フィールドはデータベースに存在しないため無視
     
     // プロジェクトを更新
     const { data, error } = await supabase
       .from('projects')
       .update(updateFields)
       .eq('id', projectId)
-      .select();
+      .select()
+      .single();
     
     if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'プロジェクトが見つかりません' },
+          { status: 404 }
+        );
+      }
+      
       return NextResponse.json(
         { error: error.message },
         { status: 400 }
       );
     }
     
-    if (!data || data.length === 0) {
-      return NextResponse.json(
-        { error: 'プロジェクトが見つかりません' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json({ project: data[0] });
+    return NextResponse.json({ project: data });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || 'プロジェクトの更新に失敗しました' },
@@ -179,17 +202,17 @@ export async function DELETE(
   try {
     const supabase = await createServerSupabaseClient();
     
-    // 認証済みユーザーのセッションを取得
-    const { data: { session } } = await supabase.auth.getSession();
+    // 認証済みユーザーを取得（より安全な方法）
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!session) {
+    if (userError || !user) {
       return NextResponse.json(
         { error: '認証が必要です' },
         { status: 401 }
       );
     }
     
-    const userId = session.user.id;
+    const userId = user.id;
     const projectId = params.id;
     
     // プロジェクトを取得
@@ -200,6 +223,13 @@ export async function DELETE(
       .single();
     
     if (projectError) {
+      if (projectError.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'プロジェクトが見つかりません' },
+          { status: 404 }
+        );
+      }
+      
       return NextResponse.json(
         { error: projectError.message },
         { status: 400 }
@@ -214,10 +244,17 @@ export async function DELETE(
       .eq('team_id', project.team_id)
       .single();
     
-    if (teamError || !teamMember) {
+    if (teamError) {
+      if (teamError.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'このチームにアクセスする権限がありません' },
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
-        { status: 403 }
+        { error: teamError.message },
+        { status: 400 }
       );
     }
     

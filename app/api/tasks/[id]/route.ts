@@ -217,6 +217,37 @@ export async function PUT(
     
     // アサインするユーザーが指定された場合
     if (assigneeIds !== undefined) {
+      // 現在のプロジェクトID（更新後のプロジェクトIDがあればそれを使用）
+      const currentProjectId = projectId !== undefined ? projectId : task.project_id;
+      
+      // プロジェクトメンバーを取得
+      const { data: projectMembers, error: projectMembersError } = await supabase
+        .from('project_members')
+        .select('user_id')
+        .eq('project_id', currentProjectId);
+      
+      if (projectMembersError) {
+        return NextResponse.json(
+          { error: projectMembersError.message },
+          { status: 400 }
+        );
+      }
+      
+      // プロジェクトメンバーのユーザーIDを抽出
+      const projectMemberUserIds = projectMembers.map((member: any) => member.user_id);
+      
+      // アサインするユーザーがプロジェクトメンバーかどうかをチェック
+      const invalidAssignees = assigneeIds.filter(
+        (assigneeId: string) => !projectMemberUserIds.includes(assigneeId)
+      );
+      
+      if (invalidAssignees.length > 0) {
+        return NextResponse.json(
+          { error: 'プロジェクトメンバーではないユーザーをタスクに割り当てることはできません' },
+          { status: 400 }
+        );
+      }
+      
       // 現在のアサインを削除
       await supabase
         .from('task_assignees')

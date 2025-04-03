@@ -136,13 +136,26 @@ export async function PUT(
     }
     
     // リクエストボディを取得
-    const { name, description } = await request.json();
+    const { 
+      name, 
+      description, 
+      postal_code, 
+      prefecture, 
+      city, 
+      address1, 
+      address2 
+    } = await request.json();
     
     // 更新するフィールドを準備
     const updateFields: any = {};
     
     if (name !== undefined) updateFields.name = name;
     if (description !== undefined) updateFields.description = description;
+    if (postal_code !== undefined) updateFields.postal_code = postal_code;
+    if (prefecture !== undefined) updateFields.prefecture = prefecture;
+    if (city !== undefined) updateFields.city = city;
+    if (address1 !== undefined) updateFields.address1 = address1;
+    if (address2 !== undefined) updateFields.address2 = address2;
     
     // チームを更新
     const { data, error } = await supabase

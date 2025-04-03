@@ -7,11 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Edit } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 interface Team {
   id: string;
   name: string;
   description?: string;
+  postal_code?: string;
+  prefecture?: string;
+  city?: string;
+  address1?: string;
+  address2?: string;
 }
 
 interface EditTeamDialogProps {
@@ -23,6 +29,11 @@ export function EditTeamDialog({ team, onTeamUpdated }: EditTeamDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(team.name);
   const [description, setDescription] = useState(team.description || '');
+  const [postalCode, setPostalCode] = useState(team.postal_code || '');
+  const [prefecture, setPrefecture] = useState(team.prefecture || '');
+  const [city, setCity] = useState(team.city || '');
+  const [address1, setAddress1] = useState(team.address1 || '');
+  const [address2, setAddress2] = useState(team.address2 || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,6 +57,11 @@ export function EditTeamDialog({ team, onTeamUpdated }: EditTeamDialogProps) {
         body: JSON.stringify({
           name,
           description: description || null,
+          postal_code: postalCode || null,
+          prefecture: prefecture || null,
+          city: city || null,
+          address1: address1 || null,
+          address2: address2 || null,
         }),
       });
       
@@ -102,6 +118,63 @@ export function EditTeamDialog({ team, onTeamUpdated }: EditTeamDialogProps) {
                 rows={3}
               />
             </div>
+            
+            <Separator className="my-2" />
+            
+            <div className="grid gap-2">
+              <h3 className="text-sm font-medium">請求先住所</h3>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="postalCode">郵便番号</Label>
+                <Input
+                  id="postalCode"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="例: 123-4567"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="prefecture">都道府県</Label>
+                <Input
+                  id="prefecture"
+                  value={prefecture}
+                  onChange={(e) => setPrefecture(e.target.value)}
+                  placeholder="例: 東京都"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="city">市区町村</Label>
+                <Input
+                  id="city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="例: 渋谷区"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="address1">住所1</Label>
+                <Input
+                  id="address1"
+                  value={address1}
+                  onChange={(e) => setAddress1(e.target.value)}
+                  placeholder="例: 渋谷1-2-3"
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="address2">住所2</Label>
+                <Input
+                  id="address2"
+                  value={address2}
+                  onChange={(e) => setAddress2(e.target.value)}
+                  placeholder="例: 渋谷ビル101"
+                />
+              </div>
+            </div>
+            
             {error && (
               <div className="text-sm text-red-500">
                 {error}

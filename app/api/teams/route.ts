@@ -71,7 +71,15 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
     
     // リクエストボディを取得
-    const { name, description } = await request.json();
+    const { 
+      name, 
+      description, 
+      postal_code, 
+      prefecture, 
+      city, 
+      address1, 
+      address2 
+    } = await request.json();
     
     if (!name) {
       return NextResponse.json(
@@ -87,6 +95,11 @@ export async function POST(request: NextRequest) {
         name,
         description: description || null,
         created_by: userId,
+        postal_code: postal_code || null,
+        prefecture: prefecture || null,
+        city: city || null,
+        address1: address1 || null,
+        address2: address2 || null,
       })
       .select()
       .single();

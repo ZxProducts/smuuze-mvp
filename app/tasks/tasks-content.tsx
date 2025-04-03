@@ -112,6 +112,20 @@ type TeamMember = {
   }
 }
 
+type ProjectMember = {
+  id: string
+  project_id: string
+  user_id: string
+  hourly_rate: number
+  created_at: string
+  updated_at: string
+  profiles: {
+    id: string
+    full_name: string
+    email: string
+  }
+}
+
 type TaskAssignee = {
   id: string
   user_id: string
@@ -172,6 +186,9 @@ export function TasksContent() {
 
   // プロジェクト情報を保持する状態
   const [projectAdminStatus, setProjectAdminStatus] = useState<Record<string, boolean>>({})
+  
+  // プロジェクトメンバーを保持する状態
+  const [projectMembers, setProjectMembers] = useState<TeamMember[]>([])
   
   // プロジェクト一覧とタスク一覧を取得
   useEffect(() => {
@@ -262,18 +279,36 @@ export function TasksContent() {
   }, [])
   
   // プロジェクトでフィルタリングする処理
-  const handleProjectChange = (projectId: string) => {
+  const handleProjectChange = async (projectId: string) => {
     setSelectedProjectId(projectId)
+    
+    // プロジェクトが選択された場合、そのプロジェクトのメンバーを取得
+    if (projectId && projectId !== "all") {
+      try {
+        // プロジェクトメンバーを取得
+        const response = await get<{ members: ProjectMember[] }>(`/api/projects/${projectId}/members`)
+        if (response.members) {
+          // ProjectMember型をTeamMember型に変換
+          const convertedMembers: TeamMember[] = response.members.map(member => ({
+            id: member.id,
+            user_id: member.user_id,
+            team_id: "", // この値は使用しないので空文字列を設定
+            role: "", // この値は使用しないので空文字列を設定
+            profiles: member.profiles
+          }))
+          setProjectMembers(convertedMembers)
+        }
+      } catch (error) {
+        console.error("プロジェクトメンバーの取得に失敗しました", error)
+        setProjectMembers([])
+      }
+    } else {
+      // 全てのプロジェクトが選択された場合、プロジェクトメンバーをクリア
+      setProjectMembers([])
+    }
   }
   
-  // タスク追加ダイアログを開く
-  const openAddDialog = () => {
-    setNewTaskTitle("")
-    setNewTaskDescription("")
-    setNewTaskDueDate(undefined)
-    setNewTaskAssignees([])
-    setIsAddDialogOpen(true)
-  }
+  // タスク追加ダイアログを開く関数は削除（各プロジェクトのタスク追加ボタンのクリックハンドラに直接実装）
   
   // タスク追加の処理
   const handleAddTask = async () => {
@@ -303,12 +338,33 @@ export function TasksContent() {
   }
   
   // タスク編集ダイアログを開く
-  const openEditDialog = (task: Task) => {
+  const openEditDialog = async (task: Task) => {
     setEditingTask(task)
     setEditTaskTitle(task.title)
     setEditTaskDescription(task.description || "")
     setEditTaskDueDate(task.due_date ? new Date(task.due_date) : undefined)
     setEditTaskAssignees(task.task_assignees.map(assignee => assignee.user_id))
+    
+    // タスクのプロジェクトのメンバーを取得
+    try {
+      // プロジェクトメンバーを取得
+      const response = await get<{ members: ProjectMember[] }>(`/api/projects/${task.project_id}/members`)
+      if (response.members) {
+        // ProjectMember型をTeamMember型に変換
+        const convertedMembers: TeamMember[] = response.members.map(member => ({
+          id: member.id,
+          user_id: member.user_id,
+          team_id: "", // この値は使用しないので空文字列を設定
+          role: "", // この値は使用しないので空文字列を設定
+          profiles: member.profiles
+        }))
+        setProjectMembers(convertedMembers)
+      }
+    } catch (error) {
+      console.error("プロジェクトメンバーの取得に失敗しました", error)
+      setProjectMembers([])
+    }
+    
     setIsEditDialogOpen(true)
   }
   
@@ -418,7 +474,8 @@ export function TasksContent() {
                   // このプロジェクトのタスクをフィルタリング
                   const projectTasks = tasks.filter(task => task.project_id === project.id);
                   
-                  if (projectTasks.length === 0 && selectedProjectId) {
+                  // タスクがなくても表示する（特定のプロジェクトが選択されている場合は、そのプロジェクトのみ表示）
+                  if (selectedProjectId && selectedProjectId !== "all" && project.id !== selectedProjectId) {
                     return null;
                   }
                   
@@ -427,9 +484,34 @@ export function TasksContent() {
                       <div className="bg-gray-100 p-3 font-medium flex justify-between items-center">
                         <div>{project.name}</div>
                         {projectAdminStatus[project.id] && (
-                          <Button size="sm" variant="ghost" onClick={() => {
+                          <Button size="sm" variant="ghost" onClick={async () => {
                             setSelectedProjectId(project.id);
-                            openAddDialog();
+                            
+                            // このプロジェクトのメンバーを取得
+                            try {
+                              const response = await get<{ members: ProjectMember[] }>(`/api/projects/${project.id}/members`);
+                              if (response.members) {
+                                // ProjectMember型をTeamMember型に変換
+                                const convertedMembers: TeamMember[] = response.members.map(member => ({
+                                  id: member.id,
+                                  user_id: member.user_id,
+                                  team_id: "", // この値は使用しないので空文字列を設定
+                                  role: "", // この値は使用しないので空文字列を設定
+                                  profiles: member.profiles
+                                }));
+                                setProjectMembers(convertedMembers);
+                              }
+                            } catch (error) {
+                              console.error("プロジェクトメンバーの取得に失敗しました", error);
+                              setProjectMembers([]);
+                            }
+                            
+                            // タスク追加ダイアログを開く
+                            setNewTaskTitle("");
+                            setNewTaskDescription("");
+                            setNewTaskDueDate(undefined);
+                            setNewTaskAssignees([]);
+                            setIsAddDialogOpen(true);
                           }}>
                             <Plus className="h-4 w-4 mr-1" />
                             タスクを追加
@@ -567,21 +649,33 @@ export function TasksContent() {
             <div className="grid gap-2">
               <Label>担当者</Label>
               <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto">
-                {teamMembers.map(member => (
-                  <div key={member.id} className="flex items-center space-x-2 mb-2">
-                    <Checkbox
-                      id={`assignee-${member.user_id}`}
-                      checked={newTaskAssignees.includes(member.user_id)}
-                      onCheckedChange={() => toggleAssignee(member.user_id, true)}
-                    />
-                    <Label
-                      htmlFor={`assignee-${member.user_id}`}
-                      className="cursor-pointer"
-                    >
-                      {member.profiles.full_name}
-                    </Label>
+                {selectedProjectId && selectedProjectId !== "all" ? (
+                  projectMembers.length > 0 ? (
+                    projectMembers.map(member => (
+                      <div key={member.id} className="flex items-center space-x-2 mb-2">
+                        <Checkbox
+                          id={`assignee-${member.user_id}`}
+                          checked={newTaskAssignees.includes(member.user_id)}
+                          onCheckedChange={() => toggleAssignee(member.user_id, true)}
+                        />
+                        <Label
+                          htmlFor={`assignee-${member.user_id}`}
+                          className="cursor-pointer"
+                        >
+                          {member.profiles.full_name}
+                        </Label>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-2 text-gray-500">
+                      プロジェクトメンバーがいません
+                    </div>
+                  )
+                ) : (
+                  <div className="text-center py-2 text-gray-500">
+                    プロジェクトを選択してください
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -652,21 +746,33 @@ export function TasksContent() {
             <div className="grid gap-2">
               <Label>担当者</Label>
               <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto">
-                {teamMembers.map(member => (
-                  <div key={member.id} className="flex items-center space-x-2 mb-2">
-                    <Checkbox
-                      id={`edit-assignee-${member.user_id}`}
-                      checked={editTaskAssignees.includes(member.user_id)}
-                      onCheckedChange={() => toggleAssignee(member.user_id, false)}
-                    />
-                    <Label
-                      htmlFor={`edit-assignee-${member.user_id}`}
-                      className="cursor-pointer"
-                    >
-                      {member.profiles.full_name}
-                    </Label>
+                {editingTask ? (
+                  projectMembers.length > 0 ? (
+                    projectMembers.map(member => (
+                      <div key={member.id} className="flex items-center space-x-2 mb-2">
+                        <Checkbox
+                          id={`edit-assignee-${member.user_id}`}
+                          checked={editTaskAssignees.includes(member.user_id)}
+                          onCheckedChange={() => toggleAssignee(member.user_id, false)}
+                        />
+                        <Label
+                          htmlFor={`edit-assignee-${member.user_id}`}
+                          className="cursor-pointer"
+                        >
+                          {member.profiles.full_name}
+                        </Label>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-2 text-gray-500">
+                      プロジェクトメンバーがいません
+                    </div>
+                  )
+                ) : (
+                  <div className="text-center py-2 text-gray-500">
+                    読み込み中...
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>

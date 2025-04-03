@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const projectId = searchParams.get('projectId');
     const teamId = searchParams.get('teamId');
+    const assignedToMe = searchParams.get('assignedToMe') === 'true';
     
     // ユーザーが所属するチームを取得
     const { data: teamMembers, error: teamError } = await supabase
@@ -63,6 +64,11 @@ export async function GET(request: NextRequest) {
         )
       `)
       .in('team_id', teamIds);
+    
+    // 自分に割り当てられたタスクのみを取得する場合
+    if (assignedToMe) {
+      query = query.filter('task_assignees.user_id', 'eq', userId);
+    }
     
     // フィルタリング条件を追加
     if (projectId) {
@@ -176,8 +182,37 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // アサインするユーザーがいる場合は、タスクアサインを作成
+    // アサインするユーザーがいる場合は、プロジェクトメンバーかどうかを確認してからタスクアサインを作成
     if (assigneeIds && assigneeIds.length > 0) {
+      // プロジェクトメンバーを取得
+      const { data: projectMembers, error: projectMembersError } = await supabase
+        .from('project_members')
+        .select('user_id')
+        .eq('project_id', projectId);
+      
+      if (projectMembersError) {
+        return NextResponse.json(
+          { error: projectMembersError.message },
+          { status: 400 }
+        );
+      }
+      
+      // プロジェクトメンバーのユーザーIDを抽出
+      const projectMemberUserIds = projectMembers.map((member: any) => member.user_id);
+      
+      // アサインするユーザーがプロジェクトメンバーかどうかをチェック
+      const invalidAssignees = assigneeIds.filter(
+        (assigneeId: string) => !projectMemberUserIds.includes(assigneeId)
+      );
+      
+      if (invalidAssignees.length > 0) {
+        return NextResponse.json(
+          { error: 'プロジェクトメンバーではないユーザーをタスクに割り当てることはできません' },
+          { status: 400 }
+        );
+      }
+      
+      // タスクアサインを作成
       const assignees = assigneeIds.map((assigneeId: string) => ({
         task_id: task.id,
         user_id: assigneeId,
