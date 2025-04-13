@@ -9,6 +9,12 @@ interface ProfileUpdateData {
   city?: string;
   address1?: string;
   address2?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_account_type?: string;
+  bank_branch_name?: string;
+  bank_branch_code?: string;
+  invoice_notes?: string;
 }
 
 // 現在のユーザー情報を取得
@@ -83,6 +89,16 @@ export async function PUT(request: NextRequest) {
     if (data.city !== undefined) updateData.city = data.city;
     if (data.address1 !== undefined) updateData.address1 = data.address1;
     if (data.address2 !== undefined) updateData.address2 = data.address2;
+    
+    // 銀行口座情報
+    if (data.bank_name !== undefined) updateData.bank_name = data.bank_name;
+    if (data.bank_account_number !== undefined) updateData.bank_account_number = data.bank_account_number;
+    if (data.bank_account_type !== undefined) updateData.bank_account_type = data.bank_account_type;
+    if (data.bank_branch_name !== undefined) updateData.bank_branch_name = data.bank_branch_name;
+    if (data.bank_branch_code !== undefined) updateData.bank_branch_code = data.bank_branch_code;
+    
+    // 請求書備考
+    if (data.invoice_notes !== undefined) updateData.invoice_notes = data.invoice_notes;
     
     // プロフィールを更新
     const { data: updatedProfile, error } = await supabase
