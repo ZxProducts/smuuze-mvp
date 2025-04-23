@@ -274,10 +274,10 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
 
     // 請求先情報
     const billingInfo = {
-      companyName: currentUser?.full_name,
-      address: `${currentUser?.prefecture}${currentUser?.city}${currentUser?.address1}\n${currentUser?.address2}`,
-      postalCode: currentUser?.postal_code,
-      email: currentUser?.email,
+      companyName: teamJson.team.name || '',
+      address: `${teamJson.team.prefecture || ''}${teamJson.team.city || ''}${teamJson.team.address1 || ''}\n${teamJson.team.address2 || ''}`,
+      postalCode: teamJson.team.postal_code || '',
+      email: teamJson.team.email || '',
     };
 
     // 請求先銀行情報
