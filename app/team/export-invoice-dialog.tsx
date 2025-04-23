@@ -82,7 +82,16 @@ export function ExportInvoiceDialog({
             <Calendar
               mode="single"
               selected={tempStartDate || undefined}
-              onSelect={(date: Date | undefined) => handleDateSelect(date || undefined)}
+              onSelect={(date: Date | undefined) => {
+                console.log(date);
+                if (date) {
+                  // 日本時間に変換
+                  const japanTime = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+                  handleDateSelect(japanTime);
+                } else {
+                  handleDateSelect(undefined);
+                }
+              }}
               modifiers={{
                 range: {
                   from: dateSelectionState === 'start-selected' ? (tempStartDate || dateRange.from) : dateRange.from,
@@ -105,8 +114,12 @@ export function ExportInvoiceDialog({
             <input
               type="date"
               id="paymentDate"
-              value={paymentDate.toISOString().split('T')[0]}
-              onChange={(e) => setPaymentDate(new Date(e.target.value))}
+              value={new Date(paymentDate.toString()).toISOString().split('T')[0]}
+              onChange={(e) => {
+                const date = new Date(e.target.value);
+                const japanTime = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+                setPaymentDate(japanTime);
+              }}
               className="border border-gray-300 rounded-md p-2"
             />
           </div>

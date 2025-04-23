@@ -297,14 +297,17 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     };
 
     const fileName = `【請求書】${member.profiles.full_name}：${format(dateRange.from, 'yyyy/MM/dd')}-${format(dateRange.to, 'yyyy/MM/dd')}`;
+    console.log(dateRange.from.toString());
+    console.log(dateRange.to.toString());
+    console.log(paymentDate.toString());
     await fetch('/api/export/invoice/', {
       method: 'POST',
       body: JSON.stringify({
         // レポートデータ
         reportData: reportData,
         // 請求日
-        from: dateRange.from,
-        to: dateRange.to,
+        from: dateRange.from.toString(),
+        to: dateRange.to.toString(),
         // 時給
         hourlyRate: member.hourly_rate,
         // 請求先情報
@@ -316,7 +319,7 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
         // 支払い先銀行情報
         paymentBankInfo: paymentBankInfo,
         // 支払い期限
-        paymentDate: paymentDate,
+        paymentDate: paymentDate.toISOString(),
       }),
     }).then((response) => {
       response.blob().then((blob) => {
