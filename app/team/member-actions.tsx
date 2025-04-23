@@ -248,40 +248,40 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     const teamJson = await teamData.json();
 
     // 請求先情報
-    const billingInfo = {
+    const paymentInfo = {
       companyName: teamJson.team.name,
-      address: `${teamJson.team.prefecture}${teamJson.team.city}${teamJson.team.address1}${teamJson.team.address2}`,
+      address: `${teamJson.team.prefecture}${teamJson.team.city}${teamJson.team.address1}\n${teamJson.team.address2}`,
       postalCode: teamJson.team.postal_code,
     };
 
-    const billingMember = teamJson.team.team_members.filter((member: any) => member.user_id === memberId)[0];
+    const paymentMember = teamJson.team.team_members.filter((member: any) => member.user_id === memberId)[0];
 
-    // 請求先銀行情報
-    const billingBankInfo = {
+    // 請求元銀行情報
+    const paymentBankInfo = {
       // 銀行名
-      bankName: billingMember.profiles.bank_name || '',
+      bankName: paymentMember.profiles.bank_name || '',
       // 銀行支店名
-      bankBranchName: billingMember.profiles.bank_branch_name || '',
+      bankBranchName: paymentMember.profiles.bank_branch_name || '',
       // 支店番号
-      bankBranchCode: billingMember.profiles.bank_branch_code || '',
+      bankBranchCode: paymentMember.profiles.bank_branch_code || '',
       // 口座種別
-      bankAccountType: billingMember.profiles.bank_account_type || '',
+      bankAccountType: paymentMember.profiles.bank_account_type || '',
       // 銀行口座番号
-      bankAccountNumber: billingMember.profiles.bank_account_number || '',
+      bankAccountNumber: paymentMember.profiles.bank_account_number || '',
       // 備考
-      notes: billingMember.profiles.invoice_notes || '',
+      notes: paymentMember.profiles.invoice_notes || '',
     };
 
-    // 請求元情報
-    const paymentInfo = {
+    // 請求先情報
+    const billingInfo = {
       companyName: currentUser?.full_name,
-      address: `${currentUser?.prefecture} ${currentUser?.city} ${currentUser?.address1} ${currentUser?.address2}`,
+      address: `${currentUser?.prefecture}${currentUser?.city}${currentUser?.address1}\n${currentUser?.address2}`,
       postalCode: currentUser?.postal_code,
       email: currentUser?.email,
     };
 
-    // 請求元銀行情報
-    const paymentBankInfo = {
+    // 請求先銀行情報
+    const billingBankInfo = {
       // 銀行名
       bankName: currentUser?.bank_name || '',
       // 銀行支店名
