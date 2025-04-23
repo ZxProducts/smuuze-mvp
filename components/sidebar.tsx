@@ -41,11 +41,10 @@ export function Sidebar({ activePage }: { activePage: string }) {
         </Button>
 
         <div className="px-3 pt-4 pb-2 text-xs text-gray-500">管理</div>
-
-        <Button variant={activePage === "team" ? "secondary" : "ghost"} className="justify-start gap-2" asChild>
-          <Link href="/team">
-            <Users2 className="h-4 w-4" />
-            チーム
+        <Button variant={activePage === "tasks" ? "secondary" : "ghost"} className="justify-start gap-2" asChild>
+          <Link href="/tasks">
+            <CheckSquare className="h-4 w-4" />
+            タスク
           </Link>
         </Button>
         <Button variant={activePage === "projects" ? "secondary" : "ghost"} className="justify-start gap-2" asChild>
@@ -54,10 +53,10 @@ export function Sidebar({ activePage }: { activePage: string }) {
             プロジェクト
           </Link>
         </Button>
-        <Button variant={activePage === "tasks" ? "secondary" : "ghost"} className="justify-start gap-2" asChild>
-          <Link href="/tasks">
-            <CheckSquare className="h-4 w-4" />
-            タスク
+        <Button variant={activePage === "team" ? "secondary" : "ghost"} className="justify-start gap-2" asChild>
+          <Link href="/team">
+            <Users2 className="h-4 w-4" />
+            チーム
           </Link>
         </Button>
       </nav>
