@@ -109,18 +109,18 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
       .moveDown(0.7)
       .text('振込先')
       .moveDown(0.3)
-      .text(invoiceData.paymentBankInfo.bankName)
+      .text(invoiceData.billingBankInfo.bankName)
       .moveDown(0.3)
-      .text(invoiceData.paymentBankInfo.bankBranchName + '(' + invoiceData.paymentBankInfo.bankBranchCode + ')')
+      .text(invoiceData.billingBankInfo.bankBranchName + '(' + invoiceData.billingBankInfo.bankBranchCode + ')')
       .moveDown(0.3)
-      .text(invoiceData.paymentBankInfo.bankAccountType + ' ' + invoiceData.paymentBankInfo.bankAccountNumber)
+      .text(invoiceData.billingBankInfo.bankAccountType + ' ' + invoiceData.billingBankInfo.bankAccountNumber)
       .moveDown(0.3)
-      .text(invoiceData.paymentInfo.companyName)
+      .text(invoiceData.billingInfo.companyName)
       .moveDown(1)
       .fontSize(9)
       .text('備考')
       .moveDown(0.3)
-      .text(invoiceData.paymentBankInfo.notes, {
+      .text(invoiceData.billingBankInfo.notes, {
         width: 200,
         align: 'left'
       })
