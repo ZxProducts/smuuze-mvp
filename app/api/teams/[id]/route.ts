@@ -68,7 +68,12 @@ export async function GET(
             bank_branch_code,
             bank_account_type,
             bank_account_number,
-            invoice_notes
+            invoice_notes,
+            postal_code,
+            prefecture,
+            city,
+            address1,
+            address2
           )
         ),
         projects (

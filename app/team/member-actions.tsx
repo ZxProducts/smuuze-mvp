@@ -248,6 +248,8 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     const teamJson = await teamData.json();
 
     const paymentMember = teamJson.team.team_members.filter((member: any) => member.user_id === memberId)[0];
+    console.log(paymentMember);
+
     // 請求先情報
     const paymentInfo = {
       companyName: paymentMember.profiles.full_name,
