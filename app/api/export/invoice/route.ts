@@ -109,18 +109,18 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
       .moveDown(0.7)
       .text('振込先')
       .moveDown(0.3)
-      .text(invoiceData.paymentBankInfo.bankName)
+      .text(invoiceData.billingBankInfo.bankName)
       .moveDown(0.3)
-      .text(invoiceData.paymentBankInfo.bankBranchName + '(' + invoiceData.paymentBankInfo.bankBranchCode + ')')
+      .text(invoiceData.billingBankInfo.bankBranchName + '(' + invoiceData.billingBankInfo.bankBranchCode + ')')
       .moveDown(0.3)
-      .text(invoiceData.paymentBankInfo.bankAccountType + ' ' + invoiceData.paymentBankInfo.bankAccountNumber)
+      .text(invoiceData.billingBankInfo.bankAccountType + ' ' + invoiceData.billingBankInfo.bankAccountNumber)
       .moveDown(0.3)
-      .text(invoiceData.paymentInfo.companyName)
+      .text(invoiceData.billingInfo.companyName)
       .moveDown(1)
       .fontSize(9)
       .text('備考')
       .moveDown(0.3)
-      .text(invoiceData.paymentBankInfo.notes, {
+      .text(invoiceData.billingBankInfo.notes, {
         width: 200,
         align: 'left'
       })
@@ -138,19 +138,19 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
 
     // 右側の情報（請求元）
     doc.fontSize(12)
-      .text(invoiceData.paymentInfo.companyName, 300, 150)
+      .text(invoiceData.paymentInfo.companyName || '', 300, 150)
       .moveDown(0.3)
-      .text('〒' + invoiceData.paymentInfo.postalCode, 300)
+      .text('〒' + invoiceData.paymentInfo.postalCode || '', 300)
       .moveDown(0.3)
-      .text(invoiceData.paymentInfo.address, 300)
+      .text(invoiceData.paymentInfo.address || '', 300)
       .moveDown(0.5)
-      .text('メール: ' + invoiceData.paymentInfo.email, 300)
+      .text('メール: ' + invoiceData.paymentInfo.email || '', 300)
       .moveDown(1)
       .text('請求書番号: ' + format(new Date(), 'yyyyMMdd-HHmmss'), 300)
       .moveDown(0.3)
-      .text('請求日: ' + billingDate, 300)
+      .text('請求日: ' + billingDate || '', 300)
       .moveDown(0.3)
-      .text('お支払期限: ' + paymentDate, 300);
+      .text('お支払期限: ' + paymentDate || '', 300);
 
     // 金額テーブルのヘッダー
     doc.moveDown(1);
