@@ -250,7 +250,7 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     // 請求先情報
     const billingInfo = {
       companyName: teamJson.team.name,
-      address: `${teamJson.team.prefecture} ${teamJson.team.city} ${teamJson.team.address1} ${teamJson.team.address2}`,
+      address: `${teamJson.team.prefecture}${teamJson.team.city}${teamJson.team.address1}${teamJson.team.address2}`,
       postalCode: teamJson.team.postal_code,
     };
 

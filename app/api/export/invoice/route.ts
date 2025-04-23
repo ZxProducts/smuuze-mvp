@@ -103,24 +103,27 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
       .text(invoiceData.billingInfo.companyName + ' 御中', { continued: false })
       .moveDown(0.3)
       .fontSize(12)
-      .text('〒' + invoiceData.billingInfo.postalCode)
+      .text('〒' + invoiceData.billingInfo.postalCode || '')
       .moveDown(0.3)
-      .text(invoiceData.billingInfo.address)
+      .text(invoiceData.billingInfo.address || '', {
+        width: 200,
+        align: 'left'
+      })
       .moveDown(0.7)
       .text('振込先')
       .moveDown(0.3)
-      .text(invoiceData.billingBankInfo.bankName)
+      .text(invoiceData.billingBankInfo.bankName || '')
       .moveDown(0.3)
-      .text(invoiceData.billingBankInfo.bankBranchName + '(' + invoiceData.billingBankInfo.bankBranchCode + ')')
+      .text((invoiceData.billingBankInfo.bankBranchName || '') + '(' + (invoiceData.billingBankInfo.bankBranchCode || '') + ')')
       .moveDown(0.3)
-      .text(invoiceData.billingBankInfo.bankAccountType + ' ' + invoiceData.billingBankInfo.bankAccountNumber)
+      .text((invoiceData.billingBankInfo.bankAccountType || '') + ' ' + (invoiceData.billingBankInfo.bankAccountNumber || ''))
       .moveDown(0.3)
-      .text(invoiceData.billingInfo.companyName)
+      .text(invoiceData.billingInfo.companyName || '')
       .moveDown(1)
       .fontSize(9)
       .text('備考')
       .moveDown(0.3)
-      .text(invoiceData.billingBankInfo.notes, {
+      .text((invoiceData.billingBankInfo.notes || ''), {
         width: 200,
         align: 'left'
       })
