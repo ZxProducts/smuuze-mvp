@@ -247,14 +247,14 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     }
     const teamJson = await teamData.json();
 
+    const paymentMember = teamJson.team.team_members.filter((member: any) => member.user_id === memberId)[0];
     // 請求先情報
     const paymentInfo = {
-      companyName: teamJson.team.name,
-      address: `${teamJson.team.prefecture}${teamJson.team.city}${teamJson.team.address1}\n${teamJson.team.address2}`,
-      postalCode: teamJson.team.postal_code,
+      companyName: paymentMember.profiles.full_name,
+      address: `${paymentMember.profiles.prefecture}${paymentMember.profiles.city}${paymentMember.profiles.address1}\n${paymentMember.profiles.address2}`,
+      postalCode: paymentMember.profiles.postal_code,
+      email: paymentMember.profiles.email,
     };
-
-    const paymentMember = teamJson.team.team_members.filter((member: any) => member.user_id === memberId)[0];
 
     // 請求元銀行情報
     const paymentBankInfo = {
