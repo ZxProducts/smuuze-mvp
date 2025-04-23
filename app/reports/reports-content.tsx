@@ -783,52 +783,6 @@ export function ReportsContent() {
       console.error(error);
     });
   };
-
-  const handleExportOperationReportWithAmount = async () => {
-    const fileName = `稼働レポート（金額あり） ${format(dateRange.from, 'yyyy/MM/dd')} - ${format(dateRange.to, 'yyyy/MM/dd')}`;
-    await fetch('/api/export/operation_report_with_amount/', {
-      method: 'POST',
-      body: JSON.stringify({
-        reportData: reportData,
-      }),
-    }).then((response) => {
-      response.blob().then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        document.body.appendChild(a);
-        a.download = `${fileName}.pdf`;
-        a.href = url;
-        a.click();
-        a.remove();
-      });
-    }).catch((error) => {
-      console.error(error);
-    });
-  };
-
-  const handleExportInvoice = async () => {
-    console.log('請求書のエクスポート');
-    const fileName = `請求書 ${format(dateRange.from, 'yyyy/MM/dd')} - ${format(dateRange.to, 'yyyy/MM/dd')}`;
-    await fetch('/api/export/invoice/', {
-      method: 'POST',
-      body: JSON.stringify({
-        method: 'invoice',
-        reportData: reportData,
-      }),
-    }).then((response) => {
-      response.blob().then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        document.body.appendChild(a);
-        a.download = `${fileName}.pdf`;
-        a.href = url;
-        a.click();
-        a.remove();
-      });
-    }).catch((error) => {
-      console.error(error);
-    });
-  };
   
   return (
     <div className="relative">

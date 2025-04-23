@@ -25,6 +25,23 @@ interface InvoiceData {
   };
   from: string;
   to: string;
+  billingBankInfo: {
+    bankName: string;
+    bankBranchName: string;
+    bankBranchCode: string;
+    bankAccountType: string;
+    bankAccountNumber: string;
+    notes: string;
+  };
+  paymentBankInfo: {
+    bankName: string;
+    bankBranchName: string;
+    bankBranchCode: string;
+    bankAccountType: string;
+    bankAccountNumber: string;
+    notes: string;
+  };
+  paymentDate: string;
 }
 
 export async function POST(request: NextRequest, response: NextResponse): Promise<NextResponse> {
@@ -92,18 +109,18 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
       .moveDown(0.7)
       .text('振込先')
       .moveDown(0.3)
-      .text('GMOあおぞらネット銀行(0310)')
+      .text(invoiceData.paymentBankInfo.bankName)
       .moveDown(0.3)
-      .text('法人第二営業部(102)')
+      .text(invoiceData.paymentBankInfo.bankBranchName + '(' + invoiceData.paymentBankInfo.bankBranchCode + ')')
       .moveDown(0.3)
-      .text('普通 12345678')
+      .text(invoiceData.paymentBankInfo.bankAccountType + ' ' + invoiceData.paymentBankInfo.bankAccountNumber)
       .moveDown(0.3)
-      .text(invoiceData.billingInfo.companyName)
+      .text(invoiceData.paymentInfo.companyName)
       .moveDown(1)
       .fontSize(9)
       .text('備考')
       .moveDown(0.3)
-      .text('誠に恐れ入りますがお振込手数料はご負担頂きますようお願い致します。', {
+      .text(invoiceData.paymentBankInfo.notes, {
         width: 200,
         align: 'left'
       })
@@ -117,7 +134,7 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
     // 請求日（yyyy/MM/ddの形式）
     const billingDate = format(new Date(invoiceData.to), 'yyyy/MM/dd');
     // 支払期限はinvoiceData.toの翌月末（yyyy/MM/ddの形式）
-    const paymentDate = format(new Date(new Date(invoiceData.to).setMonth(new Date(invoiceData.to).getMonth() + 1)), 'yyyy/MM/dd');
+    const paymentDate = format(new Date(invoiceData.paymentDate), 'yyyy/MM/dd');
 
     // 右側の情報（請求元）
     doc.fontSize(12)

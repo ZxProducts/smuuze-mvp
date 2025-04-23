@@ -18,6 +18,8 @@ interface ExportInvoiceDialogProps {
   }; 
   setDateRange: (dateRange: { from: Date; to: Date }) => void;
   onExportInvoice: () => void;
+  paymentDate: Date;
+  setPaymentDate: (paymentDate: Date) => void;
 }
 
 export function ExportInvoiceDialog({
@@ -26,7 +28,9 @@ export function ExportInvoiceDialog({
   isLoadingExportInvoice,
   dateRange,
   setDateRange,
-  onExportInvoice
+  onExportInvoice,
+  paymentDate,
+  setPaymentDate
 }: ExportInvoiceDialogProps) {
   // 日付選択の状態を管理（none: 未選択、start-selected: 開始日選択済み）
   const [dateSelectionState, setDateSelectionState] = useState<'none' | 'start-selected'>('none')
@@ -94,6 +98,16 @@ export function ExportInvoiceDialog({
               numberOfMonths={2}
               disabled={(date) => isAfter(date, new Date())}
               defaultMonth={dateRange.from}
+            />
+          </div>
+          <div className="flex items-center gap-2 my-2">
+            <label htmlFor="paymentDate">支払い期限</label>
+            <input
+              type="date"
+              id="paymentDate"
+              value={paymentDate.toISOString().split('T')[0]}
+              onChange={(e) => setPaymentDate(new Date(e.target.value))}
+              className="border border-gray-300 rounded-md p-2"
             />
           </div>
           <DialogFooter>

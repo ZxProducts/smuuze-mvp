@@ -21,6 +21,12 @@ interface TeamMember {
   profiles: {
     full_name: string;
     email: string;
+    bank_name: string;
+    bank_branch_name: string;
+    bank_branch_code: string;
+    bank_account_type: string;
+    bank_account_number: string;
+    invoice_notes: string;
   };
 }
 
@@ -58,7 +64,14 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     prefecture: string;
     role: string;
     updated_at: string;
+    bank_name: string;
+    bank_branch_name: string;
+    bank_branch_code: string;
+    bank_account_type: string;
+    bank_account_number: string;
+    invoice_notes: string;
   } | null>(null);
+  const [paymentDate, setPaymentDate] = useState<Date>(new Date());
 
   // 現在のユーザーIDを取得
   useEffect(() => {
@@ -83,6 +96,9 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     };
     
     getCurrentUser();
+
+    // 支払い期限を翌月末に設定
+    setPaymentDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1));
   }, []);
 
   const handleRemoveMember = async () => {
@@ -231,17 +247,53 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     }
     const teamJson = await teamData.json();
 
+    // 請求先情報
     const billingInfo = {
       companyName: teamJson.team.name,
       address: `${teamJson.team.prefecture} ${teamJson.team.city} ${teamJson.team.address1} ${teamJson.team.address2}`,
       postalCode: teamJson.team.postal_code,
     };
 
+    const billingMember = teamJson.team.team_members.filter((member: any) => member.user_id === memberId)[0];
+
+    // 請求先銀行情報
+    const billingBankInfo = {
+      // 銀行名
+      bankName: billingMember.profiles.bank_name || '',
+      // 銀行支店名
+      bankBranchName: billingMember.profiles.bank_branch_name || '',
+      // 支店番号
+      bankBranchCode: billingMember.profiles.bank_branch_code || '',
+      // 口座種別
+      bankAccountType: billingMember.profiles.bank_account_type || '',
+      // 銀行口座番号
+      bankAccountNumber: billingMember.profiles.bank_account_number || '',
+      // 備考
+      notes: billingMember.profiles.invoice_notes || '',
+    };
+
+    // 請求元情報
     const paymentInfo = {
       companyName: currentUser?.full_name,
       address: `${currentUser?.prefecture} ${currentUser?.city} ${currentUser?.address1} ${currentUser?.address2}`,
       postalCode: currentUser?.postal_code,
       email: currentUser?.email,
+    };
+
+    // 請求元銀行情報
+    const paymentBankInfo = {
+      // 銀行名
+      bankName: currentUser?.bank_name || '',
+      // 銀行支店名
+      bankBranchName: currentUser?.bank_branch_name || '',
+      // 支店番号
+      bankBranchCode: currentUser?.bank_branch_code || '',
+      // 口座種別
+      bankAccountType: currentUser?.bank_account_type || '',
+      // 銀行口座番号
+      bankAccountNumber: currentUser?.bank_account_number || '',
+      // 備考
+      notes: currentUser?.invoice_notes || '',
     };
 
     const fileName = `【請求書】${member.profiles.full_name}：${format(dateRange.from, 'yyyy/MM/dd')}-${format(dateRange.to, 'yyyy/MM/dd')}`;
@@ -257,8 +309,14 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
         hourlyRate: member.hourly_rate,
         // 請求先情報
         billingInfo: billingInfo,
+        // 請求先銀行情報
+        billingBankInfo: billingBankInfo,
         // 支払い先情報
         paymentInfo: paymentInfo,
+        // 支払い先銀行情報
+        paymentBankInfo: paymentBankInfo,
+        // 支払い期限
+        paymentDate: paymentDate,
       }),
     }).then((response) => {
       response.blob().then((blob) => {
@@ -419,6 +477,8 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
         dateRange={dateRange}
         setDateRange={setDateRange}
         onExportInvoice={() => handleExportInvoice(member.user_id)}
+        paymentDate={paymentDate}
+        setPaymentDate={setPaymentDate}
       />
     </>
   );

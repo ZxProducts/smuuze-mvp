@@ -62,7 +62,13 @@ export async function GET(
           profiles:user_id (
             id,
             full_name,
-            email
+            email,
+            bank_name,
+            bank_branch_name,
+            bank_branch_code,
+            bank_account_type,
+            bank_account_number,
+            invoice_notes
           )
         ),
         projects (
