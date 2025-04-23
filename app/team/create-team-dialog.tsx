@@ -29,7 +29,7 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
     e.preventDefault();
     
     if (!name.trim()) {
-      setError('チーム名は必須です');
+      setError('組織名は必須です');
       return;
     }
     
@@ -55,7 +55,7 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
       
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'チームの作成に失敗しました');
+        throw new Error(data.error || '組織の作成に失敗しました');
       }
       
       // フォームをリセット
@@ -73,7 +73,7 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
       // 親コンポーネントに通知
       onTeamCreated();
     } catch (error: any) {
-      setError(error.message || 'チームの作成に失敗しました');
+      setError(error.message || '組織の作成に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -84,25 +84,25 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
       <DialogTrigger asChild>
         <Button className="mb-4">
           <Plus className="mr-2 h-4 w-4" />
-          新しいチームを作成
+          新しい組織を作成
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>新しいチームを作成</DialogTitle>
+            <DialogTitle>新しい組織を作成</DialogTitle>
             <DialogDescription>
-              新しいチームの詳細を入力してください。作成後、メンバーを招待できます。
+              新しい組織の詳細を入力してください。作成後、メンバーを招待できます。
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">チーム名 *</Label>
+              <Label htmlFor="name">組織名 *</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="例: 開発チーム"
+                placeholder="例: 開発組織"
                 required
               />
             </div>
@@ -112,7 +112,7 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="チームの説明（任意）"
+                placeholder="組織の説明（任意）"
                 rows={3}
               />
             </div>
@@ -184,7 +184,7 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
               キャンセル
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? '作成中...' : 'チームを作成'}
+              {isSubmitting ? '作成中...' : '組織を作成'}
             </Button>
           </DialogFooter>
         </form>

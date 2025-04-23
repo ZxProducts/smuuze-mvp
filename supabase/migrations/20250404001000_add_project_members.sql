@@ -25,7 +25,7 @@ ALTER TABLE ONLY "public"."project_members" ADD CONSTRAINT "project_members_user
 ALTER TABLE "public"."project_members" ENABLE ROW LEVEL SECURITY;
 
 -- プロジェクトメンバーのRLSポリシー
-CREATE POLICY "チームメンバーはプロジェクトメンバー参照可能" ON "public"."project_members"
+CREATE POLICY "組織メンバーはプロジェクトメンバー参照可能" ON "public"."project_members"
   FOR SELECT
   USING (
     EXISTS (
@@ -37,7 +37,7 @@ CREATE POLICY "チームメンバーはプロジェクトメンバー参照可�
     )
   );
 
-CREATE POLICY "チーム管理者はプロジェクトメンバー追加可能" ON "public"."project_members"
+CREATE POLICY "組織管理者はプロジェクトメンバー追加可能" ON "public"."project_members"
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1
@@ -49,7 +49,7 @@ CREATE POLICY "チーム管理者はプロジェクトメンバー追加可能" 
     )
   );
 
-CREATE POLICY "チーム管理者はプロジェクトメンバー更新可能" ON "public"."project_members"
+CREATE POLICY "組織管理者はプロジェクトメンバー更新可能" ON "public"."project_members"
   FOR UPDATE
   USING (
     EXISTS (
@@ -72,7 +72,7 @@ CREATE POLICY "チーム管理者はプロジェクトメンバー更新可能" 
     )
   );
 
-CREATE POLICY "チーム管理者はプロジェクトメンバー削除可能" ON "public"."project_members"
+CREATE POLICY "組織管理者はプロジェクトメンバー削除可能" ON "public"."project_members"
   FOR DELETE
   USING (
     EXISTS (

@@ -217,9 +217,9 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
       updated_at: string;
     }[] = await fetchTasks();
 
-    // チーム内のプロジェクトを取得
+    // 組織内のプロジェクトを取得
     const projectIds = projects.filter((project) => project.team_id === teamId).map((project) => project.id);
-    // チームのタスクを取得（チーム内のプロジェクトのタスクを取得）
+    // 組織のタスクを取得（組織内のプロジェクトのタスクを取得）
     const filteredProjectTasks = tasks.filter((task) => projectIds.includes(task.project_id));
     const taskIds = filteredProjectTasks.filter((task) => task.task_assignees.some((assignee) => assignee.user_id === memberId)).map((task) => task.id);
 
@@ -243,7 +243,7 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     if (!teamData.ok) {
       const errorData = await teamData.json().catch(() => ({}));
       console.error('API Error:', teamData.status, errorData);
-      throw new Error(errorData.error || 'チームデータの取得に失敗しました');
+      throw new Error(errorData.error || '組織データの取得に失敗しました');
     }
     const teamJson = await teamData.json();
 
@@ -410,7 +410,7 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
           <AlertDialogHeader>
             <AlertDialogTitle>メンバーを削除</AlertDialogTitle>
             <AlertDialogDescription>
-              本当に「{member.profiles.full_name}」をチームから削除しますか？
+              本当に「{member.profiles.full_name}」を組織から削除しますか？
             </AlertDialogDescription>
           </AlertDialogHeader>
           {error && (

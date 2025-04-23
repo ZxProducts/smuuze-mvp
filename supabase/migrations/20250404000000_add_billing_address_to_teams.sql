@@ -1,4 +1,4 @@
--- チームテーブルに請求先住所フィールドを追加
+-- 組織テーブルに請求先住所フィールドを追加
 ALTER TABLE "public"."teams" 
   ADD COLUMN IF NOT EXISTS "postal_code" text,
   ADD COLUMN IF NOT EXISTS "prefecture" text,

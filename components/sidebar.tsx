@@ -56,7 +56,7 @@ export function Sidebar({ activePage }: { activePage: string }) {
         <Button variant={activePage === "team" ? "secondary" : "ghost"} className="justify-start gap-2" asChild>
           <Link href="/team">
             <Users2 className="h-4 w-4" />
-            チーム
+            組織
           </Link>
         </Button>
       </nav>

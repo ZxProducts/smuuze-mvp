@@ -40,7 +40,7 @@ interface DashboardDataResponse {
   }[];
 }
 
-// チームの型定義
+// 組織の型定義
 interface Team {
   id: string;
   name: string;
@@ -49,14 +49,14 @@ interface Team {
   created_by: string;
 }
 
-// チームメンバーの型定義
+// 組織メンバーの型定義
 interface TeamMember {
   team_id: string;
   user_id: string;
   role: string;
 }
 
-// プロジェクトとチーム情報を合わせた型定義
+// プロジェクトと組織情報を合わせた型定義
 interface ProjectWithTeam extends Project {
   team_name?: string;
   can_edit?: boolean;
@@ -77,13 +77,13 @@ export function ProjectsContent() {
   const [actionError, setActionError] = useState('');
   const [projectTimes, setProjectTimes] = useState<{[key: string]: string}>({});
 
-  // チーム情報を取得
+  // 組織情報を取得
   const fetchTeams = async () => {
     try {
-      // チーム情報を取得
+      // 組織情報を取得
       const teamsResponse = await fetch('/api/teams');
       if (!teamsResponse.ok) {
-        throw new Error('チームの取得に失敗しました');
+        throw new Error('組織の取得に失敗しました');
       }
       const teamsData = await teamsResponse.json();
       const teams = teamsData.teams || [];
@@ -93,7 +93,7 @@ export function ProjectsContent() {
       const userData = await userResponse.json();
       const currentUserId = userData.user?.id;
       
-      // 現在のユーザーが少なくとも1つのチームで管理者であるかチェック
+      // 現在のユーザーが少なくとも1つの組織で管理者であるかチェック
       let userIsAdmin = false;
       teams.forEach((team: any) => {
         if (team.team_members) {
@@ -108,7 +108,7 @@ export function ProjectsContent() {
       setIsAdmin(userIsAdmin);
       return { teams, currentUserId };
     } catch (error: any) {
-      console.error('チーム取得エラー:', error);
+      console.error('組織取得エラー:', error);
       return { teams: [], currentUserId: '' };
     }
   };
@@ -118,7 +118,7 @@ export function ProjectsContent() {
     setIsLoading(true);
     setError(null);
     try {
-      // チーム情報を取得
+      // 組織情報を取得
       const { teams: teamsData, currentUserId } = await fetchTeams();
       setTeams(teamsData);
       
@@ -129,18 +129,18 @@ export function ProjectsContent() {
       }
       const data = await response.json();
       
-      // 各プロジェクトのチームメンバー情報を取得
+      // 各プロジェクトの組織メンバー情報を取得
       const projectsWithTeamPromises = (data.projects || []).map(async (project: Project) => {
         const team = teamsData.find((t: Team) => t.id === project.team_id);
         
-        // チームメンバー情報を取得
+        // 組織メンバー情報を取得
         try {
           const membersResponse = await fetch(`/api/teams/${project.team_id}/members`);
           if (!membersResponse.ok) {
-            console.error(`チーム ${project.team_id} のメンバー取得に失敗: ${membersResponse.status}`);
+            console.error(`組織 ${project.team_id} のメンバー取得に失敗: ${membersResponse.status}`);
             return {
               ...project,
-              team_name: team?.name || '不明なチーム',
+              team_name: team?.name || '不明な組織',
               can_edit: false
             };
           }
@@ -148,7 +148,7 @@ export function ProjectsContent() {
           const membersData = await membersResponse.json();
           const members = membersData.members || [];
           
-          // ユーザーがこのチームの管理者かどうかを確認
+          // ユーザーがこの組織の管理者かどうかを確認
           const userTeamMember = members.find(
             (member: any) => member.user_id === currentUserId
           );
@@ -156,14 +156,14 @@ export function ProjectsContent() {
           
           return {
             ...project,
-            team_name: team?.name || '不明なチーム',
+            team_name: team?.name || '不明な組織',
             can_edit: canEdit
           };
         } catch (error) {
-          console.error(`チーム ${project.team_id} のメンバー取得に失敗:`, error);
+          console.error(`組織 ${project.team_id} のメンバー取得に失敗:`, error);
           return {
             ...project,
-            team_name: team?.name || '不明なチーム',
+            team_name: team?.name || '不明な組織',
             can_edit: false
           };
         }
@@ -283,7 +283,7 @@ export function ProjectsContent() {
           <div className="border-b bg-gray-50 p-3 text-sm">プロジェクト</div>
           <div className="grid grid-cols-4 border-b bg-gray-50 p-3 text-sm">
             <div className="font-medium">名前</div>
-            <div className="font-medium">チーム</div>
+            <div className="font-medium">組織</div>
             <div className="font-medium">追跡時間</div>
             <div className="font-medium text-right">アクション</div>
           </div>

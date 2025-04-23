@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 
-// チームの取得
+// 組織の取得
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     
     const userId = session.user.id;
     
-    // ユーザーが所属するチームを取得
+    // ユーザーが所属する組織を取得
     const { data: teams, error } = await supabase
       .from('teams')
       .select(`
@@ -47,13 +47,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ teams });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームの取得に失敗しました' },
+      { error: error.message || '組織の取得に失敗しました' },
       { status: 500 }
     );
   }
 }
 
-// チームの作成
+// 組織の作成
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -83,12 +83,12 @@ export async function POST(request: NextRequest) {
     
     if (!name) {
       return NextResponse.json(
-        { error: 'チーム名は必須です' },
+        { error: '組織名は必須です' },
         { status: 400 }
       );
     }
     
-    // チームを作成
+    // 組織を作成
     const { data: team, error: teamError } = await supabase
       .from('teams')
       .insert({
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // チームメンバーとして自分自身を追加（管理者として）
+    // 組織メンバーとして自分自身を追加（管理者として）
     const { error: memberError } = await supabase
       .from('team_members')
       .insert({
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       });
     
     if (memberError) {
-      // チームメンバーの追加に失敗した場合、チームも削除
+      // 組織メンバーの追加に失敗した場合、組織も削除
       await supabase
         .from('teams')
         .delete()
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ team });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームの作成に失敗しました' },
+      { error: error.message || '組織の作成に失敗しました' },
       { status: 500 }
     );
   }

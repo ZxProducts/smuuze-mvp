@@ -36,7 +36,7 @@ export async function GET(
       );
     }
     
-    // ユーザーがプロジェクトのチームに所属しているか確認
+    // ユーザーがプロジェクトの組織に所属しているか確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('role')
@@ -78,7 +78,7 @@ export async function GET(
       );
     }
     
-    // チームメンバーを取得（プロジェクトに追加可能なメンバー一覧用）
+    // 組織メンバーを取得（プロジェクトに追加可能なメンバー一覧用）
     const { data: teamMembers, error: teamMembersError } = await supabase
       .from('team_members')
       .select(`
@@ -101,7 +101,7 @@ export async function GET(
     // プロジェクトメンバーのユーザーIDを抽出
     const projectMemberUserIds = members.map((member: any) => member.user_id);
     
-    // プロジェクトに追加可能なチームメンバー（まだプロジェクトに追加されていないメンバー）
+    // プロジェクトに追加可能な組織メンバー（まだプロジェクトに追加されていないメンバー）
     const availableMembers = teamMembers.filter((member: any) => 
       !projectMemberUserIds.includes(member.user_id)
     );
@@ -155,7 +155,7 @@ export async function POST(
       );
     }
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('role')
@@ -165,7 +165,7 @@ export async function POST(
     
     if (teamMemberError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
@@ -187,7 +187,7 @@ export async function POST(
       );
     }
     
-    // ユーザーがチームに所属しているか確認
+    // ユーザーが組織に所属しているか確認
     const { data: userTeamMember, error: userTeamMemberError } = await supabase
       .from('team_members')
       .select('*')
@@ -204,7 +204,7 @@ export async function POST(
     
     if (!userTeamMember) {
       return NextResponse.json(
-        { error: 'このユーザーはチームに所属していません' },
+        { error: 'このユーザーは組織に所属していません' },
         { status: 400 }
       );
     }
@@ -232,7 +232,7 @@ export async function POST(
     }
     
     // プロジェクトメンバーとして追加
-    // チームメンバーの単価をデフォルト値として使用
+    // 組織メンバーの単価をデフォルト値として使用
     const actualHourlyRate = hourlyRate !== undefined ? hourlyRate : userTeamMember.hourly_rate;
     
     const { data: member, error: memberError } = await supabase

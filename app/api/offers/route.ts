@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     
     const userId = session.user.id;
     
-    // ユーザーが管理者のチームを取得
+    // ユーザーが管理者の組織を取得
     const { data: adminTeams, error: adminTeamsError } = await supabase
       .from('team_members')
       .select('team_id')
@@ -32,12 +32,12 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // 管理者のチームがない場合は空の配列を返す
+    // 管理者の組織がない場合は空の配列を返す
     if (!adminTeams || adminTeams.length === 0) {
       return NextResponse.json({ offers: [] });
     }
     
-    // 管理者のチームのIDを抽出
+    // 管理者の組織のIDを抽出
     const teamIds = adminTeams.map(team => team.team_id);
     
     // オファーを取得

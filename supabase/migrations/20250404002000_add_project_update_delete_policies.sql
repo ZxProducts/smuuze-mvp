@@ -1,5 +1,5 @@
 -- プロジェクトの更新ポリシー
-CREATE POLICY "チーム管理者はプロジェクト更新可能" ON "public"."projects"
+CREATE POLICY "組織管理者はプロジェクト更新可能" ON "public"."projects"
   FOR UPDATE
   USING (
     EXISTS (
@@ -21,7 +21,7 @@ CREATE POLICY "チーム管理者はプロジェクト更新可能" ON "public".
   );
 
 -- プロジェクトの削除ポリシー
-CREATE POLICY "チーム管理者はプロジェクト削除可能" ON "public"."projects"
+CREATE POLICY "組織管理者はプロジェクト削除可能" ON "public"."projects"
   FOR DELETE
   USING (
     EXISTS (

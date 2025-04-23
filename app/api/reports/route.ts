@@ -56,22 +56,22 @@ export async function GET(request: NextRequest) {
       endDate
     });
     
-    // ユーザーが所属するチームを取得
+    // ユーザーが所属する組織を取得
     const { data: teamMembers, error: teamError } = await supabase
       .from('team_members')
       .select('team_id')
       .eq('user_id', user.id);
     
     if (teamError) {
-      console.error('チーム取得エラー:', teamError);
+      console.error('組織取得エラー:', teamError);
       return NextResponse.json(
-        { error: 'チーム情報の取得に失敗しました: ' + teamError.message },
+        { error: '組織情報の取得に失敗しました: ' + teamError.message },
         { status: 500 }
       );
     }
     
     if (!teamMembers || teamMembers.length === 0) {
-      console.log('ユーザーはチームに所属していません:', user.id);
+      console.log('ユーザーは組織に所属していません:', user.id);
       return NextResponse.json({
         totalTime: "00:00:00",
         entries: [],
@@ -79,14 +79,14 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // ユーザーが所属するチームIDのリスト
+    // ユーザーが所属する組織IDのリスト
     const userTeamIds = teamMembers.map(member => member.team_id);
     
-    // フィルタリング用のチームID
-    // 指定されたチームIDがある場合はそれを使用、なければユーザーの所属チームをすべて使用
+    // フィルタリング用の組織ID
+    // 指定された組織IDがある場合はそれを使用、なければユーザーの所属組織をすべて使用
     const filterTeamIds = teamIds.length > 0 ? teamIds : userTeamIds;
     
-    // チームに所属するプロジェクトを取得
+    // 組織に所属するプロジェクトを取得
     let projectQuery = supabase
       .from('projects')
       .select('id')
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (!teamProjects || teamProjects.length === 0) {
-      console.log('チームにプロジェクトがありません:', filterTeamIds);
+      console.log('組織にプロジェクトがありません:', filterTeamIds);
       return NextResponse.json({
         totalTime: "00:00:00",
         entries: [],
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
     }
     
     // プロジェクトIDのリスト
-    // 指定されたプロジェクトIDがある場合はそれを使用、なければチームのプロジェクトをすべて使用
+    // 指定されたプロジェクトIDがある場合はそれを使用、なければ組織のプロジェクトをすべて使用
     const allProjectIds = teamProjects.map(project => project.id);
     const filterProjectIds = projectIds.length > 0 ? projectIds : allProjectIds;
     

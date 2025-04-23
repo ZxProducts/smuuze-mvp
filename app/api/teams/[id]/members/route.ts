@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 
-// チームメンバーの取得
+// 組織メンバーの取得
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -22,7 +22,7 @@ export async function GET(
     const userId = session.user.id;
     const teamId = params.id;
     
-    // ユーザーがチームに所属しているか確認
+    // ユーザーが組織に所属しているか確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('*')
@@ -31,15 +31,15 @@ export async function GET(
       .maybeSingle();
     
     if (teamMemberError) {
-      console.error('チームメンバー確認エラー:', teamMemberError.message);
+      console.error('組織メンバー確認エラー:', teamMemberError.message);
       // エラーがあっても続行
     }
     
-    // ユーザーがチームに所属していなくても、チームメンバーを取得できるようにする
+    // ユーザーが組織に所属していなくても、組織メンバーを取得できるようにする
     // これにより、isCurrentUserAdmin関数が正しく動作するようになる
-    console.log(`ユーザー(${userId})のチーム(${teamId})所属確認:`, teamMember ? '所属しています' : '所属していません');
+    console.log(`ユーザー(${userId})の組織(${teamId})所属確認:`, teamMember ? '所属しています' : '所属していません');
     
-    // チームメンバーを取得
+    // 組織メンバーを取得
     const { data: members, error: membersError } = await supabase
       .from('team_members')
       .select(`
@@ -53,7 +53,7 @@ export async function GET(
       `)
       .eq('team_id', teamId);
     
-    console.log(`チーム(${teamId})のメンバー数:`, members?.length || 0);
+    console.log(`組織(${teamId})のメンバー数:`, members?.length || 0);
     
     if (membersError) {
       return NextResponse.json(
@@ -65,13 +65,13 @@ export async function GET(
     return NextResponse.json({ members, currentUserId: userId });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームメンバーの取得に失敗しました' },
+      { error: error.message || '組織メンバーの取得に失敗しました' },
       { status: 500 }
     );
   }
 }
 
-// チームメンバーの追加
+// 組織メンバーの追加
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -92,7 +92,7 @@ export async function POST(
     const userId = session.user.id;
     const teamId = params.id;
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('role')
@@ -102,14 +102,14 @@ export async function POST(
     
     if (teamMemberError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
     
     if (teamMember.role !== 'admin') {
       return NextResponse.json(
-        { error: 'チームメンバーを追加する権限がありません' },
+        { error: '組織メンバーを追加する権限がありません' },
         { status: 403 }
       );
     }
@@ -138,9 +138,9 @@ export async function POST(
       );
     }
     
-    // ユーザーが存在する場合は直接チームメンバーに追加
+    // ユーザーが存在する場合は直接組織メンバーに追加
     if (user) {
-      // 既にチームメンバーかどうかを確認
+      // 既に組織メンバーかどうかを確認
       const { data: existingMember, error: existingMemberError } = await supabase
         .from('team_members')
         .select('id')
@@ -157,12 +157,12 @@ export async function POST(
       
       if (existingMember) {
         return NextResponse.json(
-          { error: 'このユーザーは既にチームメンバーです' },
+          { error: 'このユーザーは既に組織メンバーです' },
           { status: 400 }
         );
       }
       
-      // チームメンバーとして追加
+      // 組織メンバーとして追加
       const { data: member, error: memberError } = await supabase
         .from('team_members')
         .insert({
@@ -228,7 +228,7 @@ export async function POST(
     }
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームメンバーの追加に失敗しました' },
+      { error: error.message || '組織メンバーの追加に失敗しました' },
       { status: 500 }
     );
   }

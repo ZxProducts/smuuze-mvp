@@ -10,7 +10,7 @@ import { MemberActions } from './member-actions';
 import { EditTeamDialog } from './edit-team-dialog';
 import { DeleteTeamDialog } from './delete-team-dialog';
 
-// チームメンバーの型定義
+// 組織メンバーの型定義
 interface TeamMember {
   id: string;
   user_id: string;
@@ -25,7 +25,7 @@ interface TeamMember {
   };
 }
 
-// チームの型定義
+// 組織の型定義
 interface Team {
   id: string;
   name: string;
@@ -68,10 +68,10 @@ export function TeamContent({ teamsWithMembers }: TeamContentProps) {
     getCurrentUser();
   }, []);
 
-  // 現在のユーザーがチームの管理者かどうかを確認
+  // 現在のユーザーが組織の管理者かどうかを確認
   const isCurrentUserAdmin = (team: Team) => {
     if (!team.members || !currentUserId) {
-      console.log(`チームメンバーまたはユーザーIDが不足しています - チームID: ${team.id}, メンバー数: ${team.members?.length || 0}, ユーザーID: ${currentUserId || 'なし'}`);
+      console.log(`組織メンバーまたはユーザーIDが不足しています - 組織ID: ${team.id}, メンバー数: ${team.members?.length || 0}, ユーザーID: ${currentUserId || 'なし'}`);
       return false;
     }
     
@@ -80,59 +80,59 @@ export function TeamContent({ teamsWithMembers }: TeamContentProps) {
     );
     
     if (!currentUserMember) {
-      console.log(`現在のユーザー(${currentUserId})はチーム(${team.id})のメンバーではありません`);
+      console.log(`現在のユーザー(${currentUserId})は組織(${team.id})のメンバーではありません`);
       return false;
     }
     
     const isAdmin = currentUserMember.role === 'admin';
-    console.log(`ユーザー(${currentUserId})のチーム(${team.id})での役割: ${currentUserMember.role}, 管理者?: ${isAdmin}`);
+    console.log(`ユーザー(${currentUserId})の組織(${team.id})での役割: ${currentUserMember.role}, 管理者?: ${isAdmin}`);
     
     return isAdmin;
   };
 
-  // チーム作成後にチーム一覧を再取得
+  // 組織作成後に組織一覧を再取得
   const handleTeamCreated = async () => {
     setIsRefreshing(true);
     
     try {
-      // チーム一覧を取得
+      // 組織一覧を取得
       const teamsResponse = await fetch('/api/teams');
       if (!teamsResponse.ok) {
-        throw new Error('チーム一覧の取得に失敗しました');
+        throw new Error('組織一覧の取得に失敗しました');
       }
       
       const teamsData = await teamsResponse.json();
       const newTeams = teamsData.teams || [];
-      console.log('取得したチーム数:', newTeams.length);
+      console.log('取得した組織数:', newTeams.length);
       
-      // 各チームのメンバーを取得
+      // 各組織のメンバーを取得
       const teamsWithMembers = await Promise.all(
         newTeams.map(async (team: Team) => {
           try {
             const membersResponse = await fetch(`/api/teams/${team.id}/members`);
             if (!membersResponse.ok) {
-              console.error(`チーム ${team.id} のメンバー取得に失敗: ${membersResponse.status}`);
+              console.error(`組織 ${team.id} のメンバー取得に失敗: ${membersResponse.status}`);
               return { ...team, members: [] };
             }
             
             const membersData = await membersResponse.json();
-            console.log(`チーム ${team.id} のメンバー数:`, membersData.members?.length || 0);
+            console.log(`組織 ${team.id} のメンバー数:`, membersData.members?.length || 0);
             
             return {
               ...team,
               members: membersData.members || []
             };
           } catch (error) {
-            console.error(`チーム ${team.id} のメンバー取得に失敗:`, error);
+            console.error(`組織 ${team.id} のメンバー取得に失敗:`, error);
             return { ...team, members: [] };
           }
         })
       );
       
       setTeams(teamsWithMembers);
-      console.log('チームとメンバーの取得が完了しました');
+      console.log('組織とメンバーの取得が完了しました');
     } catch (error) {
-      console.error('チーム一覧の更新に失敗しました:', error);
+      console.error('組織一覧の更新に失敗しました:', error);
     } finally {
       setIsRefreshing(false);
     }
@@ -152,7 +152,7 @@ export function TeamContent({ teamsWithMembers }: TeamContentProps) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">チーム</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">組織</h1>
       </div>
 
 
@@ -171,7 +171,7 @@ export function TeamContent({ teamsWithMembers }: TeamContentProps) {
 
       {teams.length === 0 ? (
         <div className="p-4 text-center text-gray-500 border rounded-md">
-          チームがありません
+          組織がありません
         </div>
       ) : (
         teams.map((team) => (
@@ -227,7 +227,7 @@ export function TeamContent({ teamsWithMembers }: TeamContentProps) {
               
               {!team.members || team.members.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
-                  チームメンバーがありません
+                  組織メンバーがありません
                 </div>
               ) : team.members.filter(filterMember).length === 0 ? (
                 <div className="p-4 text-center text-gray-500">

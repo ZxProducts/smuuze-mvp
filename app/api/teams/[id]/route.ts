@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 
-// チームの取得（単一）
+// 組織の取得（単一）
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -22,7 +22,7 @@ export async function GET(
     const userId = session.user.id;
     const teamId = params.id;
     
-    // ユーザーがチームに所属しているか確認
+    // ユーザーが組織に所属しているか確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('*')
@@ -39,12 +39,12 @@ export async function GET(
     
     if (!teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
     
-    // チームを取得
+    // 組織を取得
     const { data: team, error: teamError } = await supabase
       .from('teams')
       .select(`
@@ -92,13 +92,13 @@ export async function GET(
     return NextResponse.json({ team });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームの取得に失敗しました' },
+      { error: error.message || '組織の取得に失敗しました' },
       { status: 500 }
     );
   }
 }
 
-// チームの更新
+// 組織の更新
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -119,7 +119,7 @@ export async function PUT(
     const userId = session.user.id;
     const teamId = params.id;
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('role')
@@ -129,14 +129,14 @@ export async function PUT(
     
     if (teamMemberError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
     
     if (teamMember.role !== 'admin') {
       return NextResponse.json(
-        { error: 'チームを更新する権限がありません' },
+        { error: '組織を更新する権限がありません' },
         { status: 403 }
       );
     }
@@ -163,7 +163,7 @@ export async function PUT(
     if (address1 !== undefined) updateFields.address1 = address1;
     if (address2 !== undefined) updateFields.address2 = address2;
     
-    // チームを更新
+    // 組織を更新
     const { data, error } = await supabase
       .from('teams')
       .update(updateFields)
@@ -179,7 +179,7 @@ export async function PUT(
     
     if (!data || data.length === 0) {
       return NextResponse.json(
-        { error: 'チームが見つかりません' },
+        { error: '組織が見つかりません' },
         { status: 404 }
       );
     }
@@ -187,13 +187,13 @@ export async function PUT(
     return NextResponse.json({ team: data[0] });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームの更新に失敗しました' },
+      { error: error.message || '組織の更新に失敗しました' },
       { status: 500 }
     );
   }
 }
 
-// チームの削除
+// 組織の削除
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -214,7 +214,7 @@ export async function DELETE(
     const userId = session.user.id;
     const teamId = params.id;
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('role')
@@ -224,19 +224,19 @@ export async function DELETE(
     
     if (teamMemberError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
     
     if (teamMember.role !== 'admin') {
       return NextResponse.json(
-        { error: 'チームを削除する権限がありません' },
+        { error: '組織を削除する権限がありません' },
         { status: 403 }
       );
     }
     
-    // チームを削除
+    // 組織を削除
     const { error } = await supabase
       .from('teams')
       .delete()
@@ -252,7 +252,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームの削除に失敗しました' },
+      { error: error.message || '組織の削除に失敗しました' },
       { status: 500 }
     );
   }

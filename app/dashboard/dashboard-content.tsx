@@ -220,7 +220,7 @@ export function DashboardContent() {
     fetchProjects()
   }, [])
 
-  // チーム一覧を取得
+  // 組織一覧を取得
   useEffect(() => {
     const fetchTeams = async () => {
       try {
@@ -229,8 +229,8 @@ export function DashboardContent() {
           setTeams(response.teams)
         }
       } catch (error: any) {
-        console.error("チームの取得に失敗しました", error)
-        setError("チームの取得に失敗しました")
+        console.error("組織の取得に失敗しました", error)
+        setError("組織の取得に失敗しました")
       }
     }
     
@@ -355,7 +355,7 @@ export function DashboardContent() {
     }
   }
 
-  // チーム選択の切り替え
+  // 組織選択の切り替え
   const toggleTeamSelection = (teamId: string) => {
     if (selectedTeamId === teamId) {
       setSelectedTeamId(null) // 選択解除
@@ -424,23 +424,23 @@ export function DashboardContent() {
             </PopoverContent>
           </Popover>
           
-          {/* チーム選択ドロップダウン */}
+          {/* 組織選択ドロップダウン */}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="justify-between min-w-40">
                 {selectedTeamId ? (
-                  teams.find(t => t.id === selectedTeamId)?.name || "チーム"
+                  teams.find(t => t.id === selectedTeamId)?.name || "組織"
                 ) : (
-                  "チーム選択"
+                  "組織選択"
                 )}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="p-0" align="start">
               <Command>
-                <CommandInput placeholder="チームを検索..." />
+                <CommandInput placeholder="組織を検索..." />
                 <CommandList>
-                  <CommandEmpty>チームが見つかりません</CommandEmpty>
+                  <CommandEmpty>組織が見つかりません</CommandEmpty>
                   <CommandGroup>
                     {teams.map((team) => (
                       <CommandItem
@@ -479,7 +479,7 @@ export function DashboardContent() {
             )}
             {selectedTeamId && (
               <Badge variant="secondary" className="flex items-center gap-1">
-                チーム: {teams.find(t => t.id === selectedTeamId)?.name}
+                組織: {teams.find(t => t.id === selectedTeamId)?.name}
                 <Button 
                   variant="ghost" 
                   size="icon" 

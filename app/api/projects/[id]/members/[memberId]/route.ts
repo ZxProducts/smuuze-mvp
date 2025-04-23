@@ -37,7 +37,7 @@ export async function PUT(
       );
     }
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('role')
@@ -47,7 +47,7 @@ export async function PUT(
     
     if (teamMemberError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
@@ -140,7 +140,7 @@ export async function DELETE(
       );
     }
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('role')
@@ -150,7 +150,7 @@ export async function DELETE(
     
     if (teamMemberError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }

@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (!taskAssignees || taskAssignees.length === 0) {
-      // ユーザーがタスクのチームに所属しているか確認
+      // ユーザーがタスクの組織に所属しているか確認
       const { data: task, error: taskError } = await supabase
         .from('tasks')
         .select('team_id')

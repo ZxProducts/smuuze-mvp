@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
 
-// チームの型定義
+// 組織の型定義
 interface Team {
   id: string;
   name: string;
@@ -39,13 +39,13 @@ export function CreateProjectDialog({ onProjectCreated }: CreateProjectDialogPro
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
 
-  // チーム一覧を取得
+  // 組織一覧を取得
   useEffect(() => {
     const fetchTeams = async () => {
       try {
         const response = await fetch('/api/teams');
         if (!response.ok) {
-          throw new Error('チームの取得に失敗しました');
+          throw new Error('組織の取得に失敗しました');
         }
         const data = await response.json();
         setTeams(data.teams || []);
@@ -53,7 +53,7 @@ export function CreateProjectDialog({ onProjectCreated }: CreateProjectDialogPro
           setSelectedTeamId(data.teams[0].id);
         }
       } catch (error) {
-        console.error('チームの取得エラー:', error);
+        console.error('組織の取得エラー:', error);
       }
     };
 
@@ -71,7 +71,7 @@ export function CreateProjectDialog({ onProjectCreated }: CreateProjectDialogPro
     }
 
     if (!selectedTeamId) {
-      setError('チームを選択してください');
+      setError('組織を選択してください');
       return;
     }
 
@@ -151,18 +151,18 @@ export function CreateProjectDialog({ onProjectCreated }: CreateProjectDialogPro
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="team">チーム *</Label>
+              <Label htmlFor="team">組織 *</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex justify-between w-full">
-                    {teams.find(team => team.id === selectedTeamId)?.name || 'チームを選択'}
+                    {teams.find(team => team.id === selectedTeamId)?.name || '組織を選択'}
                     <ChevronDown className="h-4 w-4 ml-2" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full">
                   {teams.length === 0 ? (
                     <DropdownMenuItem disabled>
-                      チームがありません
+                      組織がありません
                     </DropdownMenuItem>
                   ) : (
                     teams.map((team) => (

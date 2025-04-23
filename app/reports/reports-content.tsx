@@ -78,7 +78,7 @@ export function ReportsContent() {
   });
   const [shouldFetchData, setShouldFetchData] = useState(false);
   
-  // チームとプロジェクトのデータ
+  // 組織とプロジェクトのデータ
   const [teams, setTeams] = useState<{id: string, name: string}[]>([]);
   const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
   const [tasks, setTasks] = useState<{id: string, title: string}[]>([]);
@@ -95,7 +95,7 @@ export function ReportsContent() {
   // 一時的な開始日を保存
   const [tempStartDate, setTempStartDate] = useState<Date | null>(null);
 
-  // チームとプロジェクトのデータを取得
+  // 組織とプロジェクトのデータを取得
   useEffect(() => {
     const fetchTeams = async () => {
       try {
@@ -105,7 +105,7 @@ export function ReportsContent() {
           setTeams(data.teams || []);
         }
       } catch (error) {
-        console.error('チームの取得に失敗しました', error);
+        console.error('組織の取得に失敗しました', error);
       }
     };
     
@@ -138,10 +138,10 @@ export function ReportsContent() {
     fetchTasks();
   }, []);
   
-  // 初期ロード時に全てのチームを取得
+  // 初期ロード時に全ての組織を取得
   const [userTeams, setUserTeams] = useState<{id: string, name: string}[]>([]);
   
-  // 初期ロード時にユーザーが所属する全てのチームを取得
+  // 初期ロード時にユーザーが所属する全ての組織を取得
   useEffect(() => {
     const fetchUserTeams = async () => {
       try {
@@ -151,14 +151,14 @@ export function ReportsContent() {
           setUserTeams(data.teams || []);
         }
       } catch (error) {
-        console.error('ユーザーのチーム取得に失敗しました', error);
+        console.error('ユーザーの組織取得に失敗しました', error);
       }
     };
     
     fetchUserTeams();
   }, []);
   
-  // チームメンバーを取得する関数
+  // 組織メンバーを取得する関数
   const fetchTeamMembersForTeam = async (teamId: string) => {
     try {
       const response = await fetch(`/api/teams/${teamId}/members`);
@@ -166,7 +166,7 @@ export function ReportsContent() {
         const data = await response.json();
         const members = data.members || [];
         
-        // チームメンバーデータを整形
+        // 組織メンバーデータを整形
         return members.map((member: any) => ({
           id: member.id,
           userId: member.user_id,
@@ -175,32 +175,32 @@ export function ReportsContent() {
         }));
       }
     } catch (error) {
-      console.error(`チーム ${teamId} のメンバー取得に失敗しました`, error);
+      console.error(`組織 ${teamId} のメンバー取得に失敗しました`, error);
     }
     return [];
   };
   
-  // チームが選択されたとき、または初期ロード時にチームメンバーを取得
+  // 組織が選択されたとき、または初期ロード時に組織メンバーを取得
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
         let allMembers: TeamMember[] = [];
         
         if (selectedTeamIds.length > 0) {
-          // 選択されたチームのメンバーを取得
+          // 選択された組織のメンバーを取得
           for (const teamId of selectedTeamIds) {
             const members = await fetchTeamMembersForTeam(teamId);
             allMembers = [...allMembers, ...members];
           }
         } else if (userTeams.length > 0) {
-          // チーム未選択の場合は、ユーザーが所属する全てのチームのメンバーを取得
+          // 組織未選択の場合は、ユーザーが所属する全ての組織のメンバーを取得
           for (const team of userTeams) {
             const members = await fetchTeamMembersForTeam(team.id);
             allMembers = [...allMembers, ...members];
           }
         }
         
-        // 重複を排除（同じユーザーが複数のチームに所属している場合）
+        // 重複を排除（同じユーザーが複数の組織に所属している場合）
         const uniqueMembers = allMembers.reduce((acc: TeamMember[], current) => {
           const x = acc.find(item => item.userId === current.userId);
           if (!x) {
@@ -212,14 +212,14 @@ export function ReportsContent() {
         
         setTeamMembers(uniqueMembers);
       } catch (error) {
-        console.error('チームメンバーの取得に失敗しました', error);
+        console.error('組織メンバーの取得に失敗しました', error);
       }
     };
     
     fetchTeamMembers();
   }, [selectedTeamIds, userTeams]);
   
-  // チーム選択の切り替え（複数選択可能）
+  // 組織選択の切り替え（複数選択可能）
   const handleTeamSelect = (teamId: string) => {
     setSelectedTeamIds(prev => {
       // 既に選択されている場合は削除、そうでなければ追加
@@ -612,10 +612,10 @@ export function ReportsContent() {
           groupName = entry.projectName || '未設定';
           break;
         case 'team':
-          // チームIDはエントリに直接含まれていないため、プロジェクトのチームIDを使用
-          // 実際の実装では、APIからチーム情報を取得する必要があるかもしれません
+          // 組織IDはエントリに直接含まれていないため、プロジェクトの組織IDを使用
+          // 実際の実装では、APIから組織情報を取得する必要があるかもしれません
           groupId = 'team-' + (entry.projectId || 'unknown');
-          groupName = 'チーム: ' + (entry.projectName ? entry.projectName.split(' ')[0] : '未設定');
+          groupName = '組織: ' + (entry.projectName ? entry.projectName.split(' ')[0] : '未設定');
           break;
         case 'user':
           groupId = entry.userId || 'no-user';
@@ -884,18 +884,18 @@ export function ReportsContent() {
             
             {/* フィルターオプション */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* チーム選択（複数選択可能） */}
+              {/* 組織選択（複数選択可能） */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2">
                     {selectedTeamIds.length > 0 
-                      ? `チーム (${selectedTeamIds.length})`
-                      : "チーム"}
+                      ? `組織 (${selectedTeamIds.length})`
+                      : "組織"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-56">
                   <div className="space-y-2">
-                    <h4 className="font-medium">チーム選択</h4>
+                    <h4 className="font-medium">組織選択</h4>
                     <div className="grid gap-1">
                       <Button 
                         variant="outline" 
@@ -1235,7 +1235,7 @@ export function ReportsContent() {
                           break;
                         case 'team':
                           groupId = 'team-' + (entry.projectId || 'unknown');
-                          groupName = 'チーム: ' + (entry.projectName ? entry.projectName.split(' ')[0] : '未設定');
+                          groupName = '組織: ' + (entry.projectName ? entry.projectName.split(' ')[0] : '未設定');
                           break;
                         case 'user':
                           groupId = entry.userId || 'no-user';
@@ -1524,7 +1524,7 @@ export function ReportsContent() {
               size="sm"
               onClick={() => setGroupBy('team')}
             >
-              チーム
+              組織
             </Button>
             <Button 
               variant={groupBy === 'user' ? "default" : "outline"} 

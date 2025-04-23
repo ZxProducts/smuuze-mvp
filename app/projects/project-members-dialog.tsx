@@ -29,7 +29,7 @@ interface ProjectMember {
   };
 }
 
-// チームメンバーの型定義
+// 組織メンバーの型定義
 interface TeamMember {
   id: string;
   team_id: string;
@@ -304,7 +304,7 @@ export function ProjectMembersDialog({ project, onMembersUpdated, canEdit }: Pro
       // 利用可能なメンバーリストに戻す
       const teamMember = availableMembers.find(m => m.user_id === memberToDelete.user_id);
       if (!teamMember) {
-        // チームメンバー情報を取得
+        // 組織メンバー情報を取得
         const response = await fetch(`/api/teams/${project.team_id}/members`);
         if (response.ok) {
           const data = await response.json();
@@ -471,7 +471,7 @@ export function ProjectMembersDialog({ project, onMembersUpdated, canEdit }: Pro
                         value={selectedMember}
                         onChange={(e) => {
                           setSelectedMember(e.target.value);
-                          // 選択されたメンバーのチームでの単価をデフォルト値として設定
+                          // 選択されたメンバーの組織での単価をデフォルト値として設定
                           const member = availableMembers.find(m => m.user_id === e.target.value);
                           if (member) {
                             setHourlyRate(member.hourly_rate);
@@ -498,7 +498,7 @@ export function ProjectMembersDialog({ project, onMembersUpdated, canEdit }: Pro
                         onChange={(e) => setHourlyRate(e.target.value === '' ? '' : Number(e.target.value))}
                         min="0"
                         step="100"
-                        placeholder="チームの単価を使用"
+                        placeholder="組織の単価を使用"
                       />
                     </div>
                     

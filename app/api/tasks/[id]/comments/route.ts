@@ -36,7 +36,7 @@ export async function GET(
       );
     }
     
-    // ユーザーがタスクのチームに所属しているか確認
+    // ユーザーがタスクの組織に所属しているか確認
     const { data: teamMember, error: teamError } = await supabase
       .from('team_members')
       .select('*')
@@ -123,7 +123,7 @@ export async function POST(
       );
     }
     
-    // ユーザーがタスクのチームに所属しているか確認
+    // ユーザーがタスクの組織に所属しているか確認
     const { data: teamMember, error: teamError } = await supabase
       .from('team_members')
       .select('*')

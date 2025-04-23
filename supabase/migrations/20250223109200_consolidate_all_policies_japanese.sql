@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS "public"."offers" (
     CONSTRAINT "offers_status_check" CHECK (("status" = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text])))
 );
 ALTER TABLE "public"."offers" OWNER TO "postgres";
-COMMENT ON TABLE "public"."offers" IS 'チーム招待情報（RLSで制御）';
+COMMENT ON TABLE "public"."offers" IS '組織招待情報（RLSで制御）';
 
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" uuid NOT NULL,
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS "public"."team_members" (
     CONSTRAINT "team_members_weekly_work_days_check" CHECK ((("weekly_work_days" > 0::numeric) AND ("weekly_work_days" <= 7::numeric)))
 );
 ALTER TABLE "public"."team_members" OWNER TO "postgres";
-COMMENT ON TABLE "public"."team_members" IS 'チームメンバー情報（RLSで制御）';
+COMMENT ON TABLE "public"."team_members" IS '組織メンバー情報（RLSで制御）';
 
 CREATE TABLE IF NOT EXISTS "public"."teams" (
     "id" uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS "public"."teams" (
     "updated_at" timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 ALTER TABLE "public"."teams" OWNER TO "postgres";
-COMMENT ON TABLE "public"."teams" IS 'チーム情報（RLSで制御）';
+COMMENT ON TABLE "public"."teams" IS '組織情報（RLSで制御）';
 
 CREATE TABLE IF NOT EXISTS "public"."time_entries" (
     "id" uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
@@ -239,13 +239,13 @@ ALTER TABLE ONLY "public"."time_entries" ADD CONSTRAINT "time_entries_user_id_fk
 -- ▼ 以下、行レベルセキュリティ（RLS）のポリシー定義 ▼
 
 -- 【teams テーブル】
-DROP POLICY IF EXISTS "認証済みユーザーはチーム作成可能" ON "public"."teams";
+DROP POLICY IF EXISTS "認証済みユーザーは組織作成可能" ON "public"."teams";
 DROP POLICY IF EXISTS "認証済みユーザーのみ作成可能" ON "public"."teams";
-CREATE POLICY "認証済みユーザーはチーム作成可能" ON "public"."teams"
+CREATE POLICY "認証済みユーザーは組織作成可能" ON "public"."teams"
   FOR INSERT WITH CHECK (auth.uid() = created_by);
 
-DROP POLICY IF EXISTS "チーム管理者または作成者はチーム削除可能" ON "public"."teams";
-CREATE POLICY "チーム管理者または作成者はチーム削除可能" ON "public"."teams"
+DROP POLICY IF EXISTS "組織管理者または作成者は組織削除可能" ON "public"."teams";
+CREATE POLICY "組織管理者または作成者は組織削除可能" ON "public"."teams"
   FOR DELETE USING (
     (EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -256,7 +256,7 @@ CREATE POLICY "チーム管理者または作成者はチーム削除可能" ON 
   );
 
 DROP POLICY IF EXISTS "Team members can update their teams" ON "public"."teams";
-CREATE POLICY "チーム管理者または作成者はチーム更新可能" ON "public"."teams"
+CREATE POLICY "組織管理者または作成者は組織更新可能" ON "public"."teams"
   FOR UPDATE USING (
     (EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -266,8 +266,8 @@ CREATE POLICY "チーム管理者または作成者はチーム更新可能" ON 
     )) OR (created_by = auth.uid())
   );
 
-DROP POLICY IF EXISTS "自分が所属するチーム情報参照可能" ON "public"."teams";
-CREATE POLICY "自分が所属するチーム情報参照可能" ON public.teams
+DROP POLICY IF EXISTS "自分が所属する組織情報参照可能" ON "public"."teams";
+CREATE POLICY "自分が所属する組織情報参照可能" ON public.teams
   FOR SELECT
   USING (
     teams.created_by = auth.uid()
@@ -281,7 +281,7 @@ CREATE POLICY "自分が所属するチーム情報参照可能" ON public.teams
 
 -- 【offers テーブル】
 DROP POLICY IF EXISTS "Team members can create offers for their team" ON "public"."offers";
-CREATE POLICY "チームメンバーはチーム招待作成可能" ON "public"."offers"
+CREATE POLICY "組織メンバーは組織招待作成可能" ON "public"."offers"
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -291,7 +291,7 @@ CREATE POLICY "チームメンバーはチーム招待作成可能" ON "public".
   );
 
 DROP POLICY IF EXISTS "Team members can delete offers for their team" ON "public"."offers";
-CREATE POLICY "チームメンバーはチーム招待削除可能" ON "public"."offers"
+CREATE POLICY "組織メンバーは組織招待削除可能" ON "public"."offers"
   FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -301,7 +301,7 @@ CREATE POLICY "チームメンバーはチーム招待削除可能" ON "public".
   );
 
 DROP POLICY IF EXISTS "Team members can update offers for their team" ON "public"."offers";
-CREATE POLICY "チームメンバーはチーム招待更新可能" ON "public"."offers"
+CREATE POLICY "組織メンバーは組織招待更新可能" ON "public"."offers"
   FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -310,8 +310,8 @@ CREATE POLICY "チームメンバーはチーム招待更新可能" ON "public".
     )
   );
 
-DROP POLICY IF EXISTS "チームメンバーのみ参照可能" ON "public"."offers";
-CREATE POLICY "自分が所属するチームの招待情報参照可能" ON "public"."offers"
+DROP POLICY IF EXISTS "組織メンバーのみ参照可能" ON "public"."offers";
+CREATE POLICY "自分が所属する組織の招待情報参照可能" ON "public"."offers"
   FOR SELECT
   USING (
     EXISTS (
@@ -323,7 +323,7 @@ CREATE POLICY "自分が所属するチームの招待情報参照可能" ON "pu
 
 -- 【profiles テーブル】
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON "public"."profiles";
-DROP POLICY IF EXISTS "チームメンバーのプロフィールのみ参照可能" ON "public"."profiles";
+DROP POLICY IF EXISTS "組織メンバーのプロフィールのみ参照可能" ON "public"."profiles";
 DROP POLICY IF EXISTS "プロフィール参照可能範囲" ON "public"."profiles";
 CREATE POLICY "全ユーザーによるプロフィール参照可能" ON "public"."profiles"
   FOR SELECT
@@ -337,7 +337,7 @@ CREATE POLICY "自身のプロフィールのみ更新可能" ON "public"."profi
 
 -- 【projects テーブル】
 DROP POLICY IF EXISTS "Team members can create projects" ON "public"."projects";
-CREATE POLICY "チームメンバーはプロジェクト作成可能" ON "public"."projects"
+CREATE POLICY "組織メンバーはプロジェクト作成可能" ON "public"."projects"
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -358,8 +358,8 @@ CREATE POLICY "自分が所属するプロジェクト参照可能" ON "public".
   );
 
 -- 【task_assignees テーブル】
-DROP POLICY IF EXISTS "チームメンバーはタスクアサイン参照可能" ON "public"."task_assignees";
-CREATE POLICY "チームメンバーはタスクアサイン参照可能" ON "public"."task_assignees"
+DROP POLICY IF EXISTS "組織メンバーはタスクアサイン参照可能" ON "public"."task_assignees";
+CREATE POLICY "組織メンバーはタスクアサイン参照可能" ON "public"."task_assignees"
   FOR SELECT
   USING (
     EXISTS (
@@ -371,8 +371,8 @@ CREATE POLICY "チームメンバーはタスクアサイン参照可能" ON "pu
     )
   );
 
-DROP POLICY IF EXISTS "チームメンバーはタスクアサイン削除可能" ON "public"."task_assignees";
-CREATE POLICY "チームメンバーはタスクアサイン削除可能" ON "public"."task_assignees"
+DROP POLICY IF EXISTS "組織メンバーはタスクアサイン削除可能" ON "public"."task_assignees";
+CREATE POLICY "組織メンバーはタスクアサイン削除可能" ON "public"."task_assignees"
   FOR DELETE
   USING (
     EXISTS (
@@ -384,8 +384,8 @@ CREATE POLICY "チームメンバーはタスクアサイン削除可能" ON "pu
     )
   );
 
-DROP POLICY IF EXISTS "チームメンバーはタスクアサイン追加可能" ON "public"."task_assignees";
-CREATE POLICY "チームメンバーはタスクアサイン追加可能" ON "public"."task_assignees"
+DROP POLICY IF EXISTS "組織メンバーはタスクアサイン追加可能" ON "public"."task_assignees";
+CREATE POLICY "組織メンバーはタスクアサイン追加可能" ON "public"."task_assignees"
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1
@@ -396,8 +396,8 @@ CREATE POLICY "チームメンバーはタスクアサイン追加可能" ON "pu
     )
   );
 
-DROP POLICY IF EXISTS "チームメンバーはタスクアサイン更新可能" ON "public"."task_assignees";
-CREATE POLICY "チームメンバーはタスクアサイン更新可能" ON "public"."task_assignees"
+DROP POLICY IF EXISTS "組織メンバーはタスクアサイン更新可能" ON "public"."task_assignees";
+CREATE POLICY "組織メンバーはタスクアサイン更新可能" ON "public"."task_assignees"
   FOR UPDATE
   USING (
     EXISTS (
@@ -419,7 +419,7 @@ CREATE POLICY "チームメンバーはタスクアサイン更新可能" ON "pu
   );
 -- 【task_comments テーブル】
 DROP POLICY IF EXISTS "Team members can view task comments" ON "public"."task_comments";
-CREATE POLICY "チームメンバーはタスクコメント参照可能" ON "public"."task_comments"
+CREATE POLICY "組織メンバーはタスクコメント参照可能" ON "public"."task_comments"
   FOR SELECT
   USING (
     EXISTS (
@@ -433,7 +433,7 @@ CREATE POLICY "チームメンバーはタスクコメント参照可能" ON "pu
 
 -- 【tasks テーブル】
 DROP POLICY IF EXISTS "Team members can create tasks" ON "public"."tasks";
-CREATE POLICY "チームメンバーはタスク作成可能" ON "public"."tasks"
+CREATE POLICY "組織メンバーはタスク作成可能" ON "public"."tasks"
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -443,7 +443,7 @@ CREATE POLICY "チームメンバーはタスク作成可能" ON "public"."tasks
   );
 
 DROP POLICY IF EXISTS "Team members can delete tasks" ON "public"."tasks";
-CREATE POLICY "チームメンバーはタスク削除可能" ON "public"."tasks"
+CREATE POLICY "組織メンバーはタスク削除可能" ON "public"."tasks"
   FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -453,7 +453,7 @@ CREATE POLICY "チームメンバーはタスク削除可能" ON "public"."tasks
   );
 
 DROP POLICY IF EXISTS "Team members can update tasks" ON "public"."tasks";
-CREATE POLICY "チームメンバーはタスク更新可能" ON "public"."tasks"
+CREATE POLICY "組織メンバーはタスク更新可能" ON "public"."tasks"
   FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -481,8 +481,8 @@ CREATE POLICY "自分が所属するタスク参照可能" ON "public"."tasks"
 
 -- 【team_members テーブル】
 DROP POLICY IF EXISTS "Team admins can insert new members" ON "public"."team_members";
-DROP POLICY IF EXISTS "チーム作成者または管理者のみ追加可能" ON "public"."team_members";
-CREATE POLICY "チーム管理者または作成者はメンバー追加可能" ON "public"."team_members"
+DROP POLICY IF EXISTS "組織作成者または管理者のみ追加可能" ON "public"."team_members";
+CREATE POLICY "組織管理者または作成者はメンバー追加可能" ON "public"."team_members"
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.teams
@@ -501,13 +501,13 @@ CREATE POLICY "チーム管理者または作成者はメンバー追加可能" 
   );
 
 -- 既存の「自身のメンバーシップ削除可能」ポリシーはそのまま残す
-DROP POLICY IF EXISTS "チームメンバーは自身のメンバーシップ削除可能" ON "public"."team_members";
-CREATE POLICY "チームメンバーは自身のメンバーシップ削除可能" ON "public"."team_members"
+DROP POLICY IF EXISTS "組織メンバーは自身のメンバーシップ削除可能" ON "public"."team_members";
+CREATE POLICY "組織メンバーは自身のメンバーシップ削除可能" ON "public"."team_members"
   FOR DELETE USING (user_id = auth.uid());
 
 -- 新たに管理者用の削除ポリシーを追加
-DROP POLICY IF EXISTS "チーム管理者はメンバーを削除可能" ON "public"."team_members";
-CREATE POLICY "チーム管理者はメンバーを削除可能" ON "public"."team_members"
+DROP POLICY IF EXISTS "組織管理者はメンバーを削除可能" ON "public"."team_members";
+CREATE POLICY "組織管理者はメンバーを削除可能" ON "public"."team_members"
   FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM public.team_members tm
@@ -518,10 +518,10 @@ CREATE POLICY "チーム管理者はメンバーを削除可能" ON "public"."te
   );
 
 DROP POLICY IF EXISTS "Team members can update membership" ON "public"."team_members";
-CREATE POLICY "チームメンバーは自身のメンバーシップ更新可能" ON "public"."team_members"
+CREATE POLICY "組織メンバーは自身のメンバーシップ更新可能" ON "public"."team_members"
   FOR UPDATE USING (user_id = auth.uid());
 
-DROP POLICY IF EXISTS "チームメンバーのみ参照可能" ON "public"."team_members";
+DROP POLICY IF EXISTS "組織メンバーのみ参照可能" ON "public"."team_members";
 CREATE OR REPLACE FUNCTION public.is_team_member(p_user_id uuid, p_team_id uuid)
 RETURNS boolean AS $$
 BEGIN
@@ -533,9 +533,9 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-DROP POLICY IF EXISTS "自分が所属するチームの全メンバー情報参照可能" ON "public"."team_members";
+DROP POLICY IF EXISTS "自分が所属する組織の全メンバー情報参照可能" ON "public"."team_members";
 -- 新しいポリシーを適用
-CREATE POLICY "自分が所属するチームの全メンバー情報参照可能" ON "public"."team_members"
+CREATE POLICY "自分が所属する組織の全メンバー情報参照可能" ON "public"."team_members"
   FOR SELECT
   USING (
     public.is_team_member(auth.uid(), team_id)
@@ -544,7 +544,7 @@ CREATE POLICY "自分が所属するチームの全メンバー情報参照可�
 
 -- 【time_entries テーブル】
 DROP POLICY IF EXISTS "Team members can insert time entries" ON "public"."time_entries";
-CREATE POLICY "チームメンバーはタイムエントリー追加可能" ON "public"."time_entries"
+CREATE POLICY "組織メンバーはタイムエントリー追加可能" ON "public"."time_entries"
   FOR INSERT WITH CHECK (
     auth.uid() = user_id
     AND EXISTS (
@@ -559,7 +559,7 @@ CREATE POLICY "チームメンバーはタイムエントリー追加可能" ON 
   );
 
 DROP POLICY IF EXISTS "Team members can update their own time entries" ON "public"."time_entries";
-CREATE POLICY "チームメンバーは自身のタイムエントリー更新可能" ON "public"."time_entries"
+CREATE POLICY "組織メンバーは自身のタイムエントリー更新可能" ON "public"."time_entries"
   FOR UPDATE USING (
     auth.uid() = user_id
     AND EXISTS (
@@ -590,7 +590,7 @@ CREATE POLICY "ユーザーは自身のタイムエントリー参照可能" ON 
   USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Team members can view time entries" ON "public"."time_entries";
-CREATE POLICY "チームメンバーはチームのタイムエントリー参照可能" ON "public"."time_entries"
+CREATE POLICY "組織メンバーは組織のタイムエントリー参照可能" ON "public"."time_entries"
   FOR SELECT
   USING (
     auth.uid() = user_id

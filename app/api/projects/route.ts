@@ -19,24 +19,24 @@ export async function GET(request: NextRequest) {
     
     const userId = user.id;
     
-    // ユーザーが所属するチームを取得
+    // ユーザーが所属する組織を取得
     const { data: teamMembers, error: teamError } = await supabase
       .from('team_members')
       .select('team_id')
       .eq('user_id', userId);
     
     if (teamError) {
-      return NextResponse.json({ projects: [], debug: `チーム取得エラー: ${teamError.message}` });
+      return NextResponse.json({ projects: [], debug: `組織取得エラー: ${teamError.message}` });
     }
     
-    // ユーザーが所属するチームのIDを抽出
+    // ユーザーが所属する組織のIDを抽出
     const teamIds = teamMembers.map((member: { team_id: string }) => member.team_id);
     
     if (teamIds.length === 0) {
-      return NextResponse.json({ projects: [], debug: '所属チームなし' });
+      return NextResponse.json({ projects: [], debug: '所属組織なし' });
     }
     
-    // チームに紐づくプロジェクトを取得
+    // 組織に紐づくプロジェクトを取得
     const { data: projects, error: projectError } = await supabase
       .from('projects')
       .select('*')
@@ -78,12 +78,12 @@ export async function POST(request: NextRequest) {
     
     if (!name || !teamId || !startDate) {
       return NextResponse.json(
-        { error: 'プロジェクト名、チームID、開始日は必須です' },
+        { error: 'プロジェクト名、組織ID、開始日は必須です' },
         { status: 400 }
       );
     }
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamError } = await supabase
       .from('team_members')
       .select('role')
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     
     if (teamError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }

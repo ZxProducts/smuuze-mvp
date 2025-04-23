@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     
     console.log("期間:", startDate, "から", endDate);
     
-    // ユーザーが所属するチームを取得
+    // ユーザーが所属する組織を取得
     const { data: teamMembers } = await supabase
       .from('team_members')
       .select('team_id')
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     const teamIds = teamMembers?.map(member => member.team_id) || [];
     
     if (teamIds.length === 0) {
-      // ユーザーがどのチームにも所属していない場合は空のデータを返す
+      // ユーザーがどの組織にも所属していない場合は空のデータを返す
       return NextResponse.json({
         totalTime: "00時間00分",
         topProject: null,
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // チームに所属するプロジェクトを取得
+    // 組織に所属するプロジェクトを取得
     const { data: teamProjects } = await supabase
       .from('projects')
       .select('id')
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     
     const projectIds = teamProjects?.map(project => project.id) || [];
     
-    // 基本クエリを構築 - 自分のチームのプロジェクトに関連するすべてのタイムエントリーを取得
+    // 基本クエリを構築 - 自分の組織のプロジェクトに関連するすべてのタイムエントリーを取得
     let query = supabase
       .from('time_entries')
       .select(`
@@ -98,9 +98,9 @@ export async function GET(request: NextRequest) {
       query = query.eq('project_id', projectId);
     }
     
-    // チームIDでフィルタリング
+    // 組織IDでフィルタリング
     if (teamId) {
-      // 特定のチームのプロジェクトに絞り込む
+      // 特定の組織のプロジェクトに絞り込む
       const { data: teamProjectIds } = await supabase
         .from('projects')
         .select('id')

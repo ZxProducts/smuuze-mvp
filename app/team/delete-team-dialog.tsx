@@ -27,7 +27,7 @@ export function DeleteTeamDialog({ teamId, teamName, onTeamDeleted }: DeleteTeam
       
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'チームの削除に失敗しました');
+        throw new Error(data.error || '組織の削除に失敗しました');
       }
       
       // モーダルを閉じる
@@ -36,7 +36,7 @@ export function DeleteTeamDialog({ teamId, teamName, onTeamDeleted }: DeleteTeam
       // 親コンポーネントに通知
       onTeamDeleted();
     } catch (error: any) {
-      setError(error.message || 'チームの削除に失敗しました');
+      setError(error.message || '組織の削除に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -51,14 +51,14 @@ export function DeleteTeamDialog({ teamId, teamName, onTeamDeleted }: DeleteTeam
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>チームを削除</DialogTitle>
+          <DialogTitle>組織を削除</DialogTitle>
           <DialogDescription>
             本当に「{teamName}」を削除しますか？この操作は元に戻せません。
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
           <p className="text-sm text-gray-500">
-            チームを削除すると、チームに関連するすべてのデータ（メンバー、プロジェクト、タスクなど）も削除されます。
+            組織を削除すると、組織に関連するすべてのデータ（メンバー、プロジェクト、タスクなど）も削除されます。
           </p>
           {error && (
             <div className="mt-2 text-sm text-red-500">
@@ -76,7 +76,7 @@ export function DeleteTeamDialog({ teamId, teamName, onTeamDeleted }: DeleteTeam
             onClick={handleDelete}
             disabled={isSubmitting}
           >
-            {isSubmitting ? '削除中...' : 'チームを削除'}
+            {isSubmitting ? '削除中...' : '組織を削除'}
           </Button>
         </DialogFooter>
       </DialogContent>

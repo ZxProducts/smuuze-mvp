@@ -5,7 +5,7 @@ import { TeamContent } from "./team-content"
 
 export const dynamic = 'force-dynamic';
 
-// チームメンバーの型定義
+// 組織メンバーの型定義
 interface TeamMember {
   id: string;
   user_id: string;
@@ -20,7 +20,7 @@ interface TeamMember {
   };
 }
 
-// チームの型定義
+// 組織の型定義
 interface Team {
   id: string;
   name: string;
@@ -37,19 +37,19 @@ interface TeamMembersResponse {
   members: TeamMember[];
 }
 
-// サーバーコンポーネントでチーム一覧を取得
+// サーバーコンポーネントで組織一覧を取得
 async function getTeams(): Promise<Team[]> {
   try {
-    // 共通API関数を使用してチーム一覧を取得
+    // 共通API関数を使用して組織一覧を取得
     const teamsData = await get<TeamsResponse>('/api/teams');
     return teamsData.teams || [];
   } catch (error) {
-    console.error('チーム一覧の取得に失敗しました:', error);
+    console.error('組織一覧の取得に失敗しました:', error);
     return [];
   }
 }
 
-// サーバーコンポーネントで特定チームのメンバー一覧を取得
+// サーバーコンポーネントで特定組織のメンバー一覧を取得
 async function getTeamMembers(teamId: string): Promise<TeamMember[]> {
   try {
     if (!teamId) return [];
@@ -57,18 +57,18 @@ async function getTeamMembers(teamId: string): Promise<TeamMember[]> {
     const membersData = await get<TeamMembersResponse>(`/api/teams/${teamId}/members`);
     return membersData.members || [];
   } catch (error) {
-    console.error('チームメンバーの取得に失敗しました:', error);
+    console.error('組織メンバーの取得に失敗しました:', error);
     return [];
   }
 }
 
-// サーバーコンポーネントで全チームとそのメンバーを取得
+// サーバーコンポーネントで全組織とそのメンバーを取得
 async function getAllTeamsWithMembers(): Promise<Team[]> {
   try {
-    // チーム一覧を取得
+    // 組織一覧を取得
     const teams = await getTeams();
     
-    // 各チームのメンバーを取得
+    // 各組織のメンバーを取得
     const teamsWithMembers = await Promise.all(
       teams.map(async (team) => {
         const members = await getTeamMembers(team.id);
@@ -81,13 +81,13 @@ async function getAllTeamsWithMembers(): Promise<Team[]> {
     
     return teamsWithMembers;
   } catch (error) {
-    console.error('チームとメンバーの取得に失敗しました:', error);
+    console.error('組織とメンバーの取得に失敗しました:', error);
     return [];
   }
 }
 
 export default async function TeamPage() {
-  // 全チームとそのメンバーを取得
+  // 全組織とそのメンバーを取得
   const teamsWithMembers = await getAllTeamsWithMembers();
   
   return (

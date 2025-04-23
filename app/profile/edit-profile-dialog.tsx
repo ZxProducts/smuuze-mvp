@@ -106,7 +106,7 @@ export default function EditProfileDialog({ isOpen, onClose, profile, onUpdate }
           <Tabs defaultValue="basic">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="basic">基本情報</TabsTrigger>
-              <TabsTrigger value="address">請求先住所</TabsTrigger>
+              <TabsTrigger value="address">請求発行元住所</TabsTrigger>
               <TabsTrigger value="bank">銀行口座</TabsTrigger>
             </TabsList>
             

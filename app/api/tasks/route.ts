@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const teamId = searchParams.get('teamId');
     const assignedToMe = searchParams.get('assignedToMe') === 'true';
     
-    // ユーザーが所属するチームを取得
+    // ユーザーが所属する組織を取得
     const { data: teamMembers, error: teamError } = await supabase
       .from('team_members')
       .select('team_id')
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // ユーザーが所属するチームのIDを抽出
+    // ユーザーが所属する組織のIDを抽出
     const teamIds = teamMembers.map(member => member.team_id);
     
     if (teamIds.length === 0) {
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // プロジェクトを取得してチームIDを取得
+    // プロジェクトを取得して組織IDを取得
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .select('team_id')
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     
     const teamId = project.team_id;
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamError } = await supabase
       .from('team_members')
       .select('role')
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     
     if (teamError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }

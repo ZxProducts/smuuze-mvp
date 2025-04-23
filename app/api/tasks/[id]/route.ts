@@ -72,7 +72,7 @@ export async function GET(
       );
     }
     
-    // ユーザーがタスクのチームに所属しているか確認
+    // ユーザーがタスクの組織に所属しているか確認
     const { data: teamMember, error: teamError } = await supabase
       .from('team_members')
       .select('*')
@@ -138,7 +138,7 @@ export async function PUT(
       );
     }
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamError } = await supabase
       .from('team_members')
       .select('role')
@@ -148,7 +148,7 @@ export async function PUT(
     
     if (teamError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
@@ -171,7 +171,7 @@ export async function PUT(
     if (projectId !== undefined) updateFields.project_id = projectId;
     if (dueDate !== undefined) updateFields.due_date = dueDate;
     
-    // プロジェクトIDが変更された場合、新しいプロジェクトのチームIDを取得
+    // プロジェクトIDが変更された場合、新しいプロジェクトの組織IDを取得
     if (projectId !== undefined && projectId !== task.project_id) {
       const { data: project, error: projectError } = await supabase
         .from('projects')
@@ -318,7 +318,7 @@ export async function DELETE(
       );
     }
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamError } = await supabase
       .from('team_members')
       .select('role')
@@ -328,7 +328,7 @@ export async function DELETE(
     
     if (teamError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }

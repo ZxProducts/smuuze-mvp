@@ -41,7 +41,7 @@ export function EditTeamDialog({ team, onTeamUpdated }: EditTeamDialogProps) {
     e.preventDefault();
     
     if (!name.trim()) {
-      setError('チーム名は必須です');
+      setError('組織名は必須です');
       return;
     }
     
@@ -67,7 +67,7 @@ export function EditTeamDialog({ team, onTeamUpdated }: EditTeamDialogProps) {
       
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'チームの更新に失敗しました');
+        throw new Error(data.error || '組織の更新に失敗しました');
       }
       
       // モーダルを閉じる
@@ -76,7 +76,7 @@ export function EditTeamDialog({ team, onTeamUpdated }: EditTeamDialogProps) {
       // 親コンポーネントに通知
       onTeamUpdated();
     } catch (error: any) {
-      setError(error.message || 'チームの更新に失敗しました');
+      setError(error.message || '組織の更新に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -92,19 +92,19 @@ export function EditTeamDialog({ team, onTeamUpdated }: EditTeamDialogProps) {
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>チームを編集</DialogTitle>
+            <DialogTitle>組織を編集</DialogTitle>
             <DialogDescription>
-              チームの詳細を更新してください。
+              組織の詳細を更新してください。
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">チーム名 *</Label>
+              <Label htmlFor="name">組織名 *</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="例: 開発チーム"
+                placeholder="例: 開発組織"
                 required
               />
             </div>
@@ -114,7 +114,7 @@ export function EditTeamDialog({ team, onTeamUpdated }: EditTeamDialogProps) {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="チームの説明（任意）"
+                placeholder="組織の説明（任意）"
                 rows={3}
               />
             </div>

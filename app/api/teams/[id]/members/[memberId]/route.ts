@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 
-// チームメンバーの取得（単一）
+// 組織メンバーの取得（単一）
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string; memberId: string } }
@@ -23,7 +23,7 @@ export async function GET(
     const teamId = params.id;
     const memberId = params.memberId;
     
-    // ユーザーがチームに所属しているか確認
+    // ユーザーが組織に所属しているか確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('*')
@@ -40,12 +40,12 @@ export async function GET(
     
     if (!teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
     
-    // チームメンバーを取得
+    // 組織メンバーを取得
     const { data: member, error: memberError } = await supabase
       .from('team_members')
       .select(`
@@ -71,13 +71,13 @@ export async function GET(
     return NextResponse.json({ member });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームメンバーの取得に失敗しました' },
+      { error: error.message || '組織メンバーの取得に失敗しました' },
       { status: 500 }
     );
   }
 }
 
-// チームメンバーの更新
+// 組織メンバーの更新
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string; memberId: string } }
@@ -99,7 +99,7 @@ export async function PUT(
     const teamId = params.id;
     const memberId = params.memberId;
     
-    // ユーザーがチームの管理者かどうかを確認
+    // ユーザーが組織の管理者かどうかを確認
     const { data: teamMember, error: teamMemberError } = await supabase
       .from('team_members')
       .select('role')
@@ -107,28 +107,28 @@ export async function PUT(
       .eq('team_id', teamId)
       .single();
     
-    console.log(`ユーザー(${userId})のチーム(${teamId})での役割確認:`, teamMember ? teamMember.role : 'メンバーではありません');
+    console.log(`ユーザー(${userId})の組織(${teamId})での役割確認:`, teamMember ? teamMember.role : 'メンバーではありません');
     
     if (teamMemberError) {
-      console.error('チームメンバー確認エラー:', teamMemberError.message);
+      console.error('組織メンバー確認エラー:', teamMemberError.message);
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
     
     if (!teamMember) {
-      console.error(`ユーザー(${userId})はチーム(${teamId})のメンバーではありません`);
+      console.error(`ユーザー(${userId})は組織(${teamId})のメンバーではありません`);
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
     
     if (teamMember.role !== 'admin') {
-      console.error(`ユーザー(${userId})はチーム(${teamId})の管理者ではありません`);
+      console.error(`ユーザー(${userId})は組織(${teamId})の管理者ではありません`);
       return NextResponse.json(
-        { error: 'チームメンバーを更新する権限がありません' },
+        { error: '組織メンバーを更新する権限がありません' },
         { status: 403 }
       );
     }
@@ -151,8 +151,8 @@ export async function PUT(
     
     console.log('更新するフィールド:', updateFields);
     
-    // 更新前にチームメンバーが存在するか確認
-    console.log(`チームメンバー確認: teamId=${teamId}, memberId=${memberId}`);
+    // 更新前に組織メンバーが存在するか確認
+    console.log(`組織メンバー確認: teamId=${teamId}, memberId=${memberId}`);
     const { data: existingMember, error: existingMemberError } = await supabase
       .from('team_members')
       .select('*')
@@ -161,7 +161,7 @@ export async function PUT(
       .maybeSingle();
     
     if (existingMemberError) {
-      console.error('チームメンバー確認エラー:', existingMemberError.message);
+      console.error('組織メンバー確認エラー:', existingMemberError.message);
       return NextResponse.json(
         { error: existingMemberError.message },
         { status: 400 }
@@ -169,16 +169,16 @@ export async function PUT(
     }
     
     if (!existingMember) {
-      console.error(`チームメンバーが見つかりません: teamId=${teamId}, memberId=${memberId}`);
+      console.error(`組織メンバーが見つかりません: teamId=${teamId}, memberId=${memberId}`);
       return NextResponse.json(
-        { error: 'チームメンバーが見つかりません' },
+        { error: '組織メンバーが見つかりません' },
         { status: 404 }
       );
     }
     
-    console.log('更新前のチームメンバー:', existingMember);
+    console.log('更新前の組織メンバー:', existingMember);
     
-    // チームメンバーを更新
+    // 組織メンバーを更新
     console.log('Supabaseクエリを実行: team_members.update()');
     console.log('更新条件: id =', memberId, 'AND team_id =', teamId);
     console.log('更新フィールド:', JSON.stringify(updateFields, null, 2));
@@ -199,9 +199,9 @@ export async function PUT(
       `);
     
     if (error) {
-      console.error('チームメンバー更新エラー:', error.message);
+      console.error('組織メンバー更新エラー:', error.message);
     } else {
-      console.log('チームメンバー更新成功:', data);
+      console.log('組織メンバー更新成功:', data);
     }
     
     // 更新後のデータを確認
@@ -216,7 +216,7 @@ export async function PUT(
     if (updatedMemberError) {
       console.error('更新後のデータ取得エラー:', updatedMemberError.message);
     } else {
-      console.log('更新後のチームメンバー:', updatedMember);
+      console.log('更新後の組織メンバー:', updatedMember);
       console.log('ロールが更新されたか:', updatedMember.role === role);
     }
     
@@ -269,13 +269,13 @@ export async function PUT(
     return NextResponse.json({ member: data[0] });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームメンバーの更新に失敗しました' },
+      { error: error.message || '組織メンバーの更新に失敗しました' },
       { status: 500 }
     );
   }
 }
 
-// チームメンバーの削除
+// 組織メンバーの削除
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string; memberId: string } }
@@ -297,7 +297,7 @@ export async function DELETE(
     const teamId = params.id;
     const memberId = params.memberId;
     
-    // チームメンバーを取得
+    // 組織メンバーを取得
     const { data: member, error: memberError } = await supabase
       .from('team_members')
       .select('user_id, role')
@@ -337,7 +337,7 @@ export async function DELETE(
         }
       }
       
-      // チームメンバーを削除
+      // 組織メンバーを削除
       const { error } = await supabase
         .from('team_members')
         .delete()
@@ -363,19 +363,19 @@ export async function DELETE(
     
     if (teamMemberError || !teamMember) {
       return NextResponse.json(
-        { error: 'このチームにアクセスする権限がありません' },
+        { error: 'この組織にアクセスする権限がありません' },
         { status: 403 }
       );
     }
     
     if (teamMember.role !== 'admin') {
       return NextResponse.json(
-        { error: 'チームメンバーを削除する権限がありません' },
+        { error: '組織メンバーを削除する権限がありません' },
         { status: 403 }
       );
     }
     
-    // チームメンバーを削除
+    // 組織メンバーを削除
     const { error } = await supabase
       .from('team_members')
       .delete()
@@ -391,7 +391,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || 'チームメンバーの削除に失敗しました' },
+      { error: error.message || '組織メンバーの削除に失敗しました' },
       { status: 500 }
     );
   }

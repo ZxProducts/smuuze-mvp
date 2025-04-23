@@ -113,7 +113,7 @@ export async function POST(
       );
     }
     
-    // 2. チームメンバーとして追加
+    // 2. 組織メンバーとして追加
     const { data: member, error: memberError } = await supabase
       .from('team_members')
       .insert({
@@ -130,7 +130,7 @@ export async function POST(
       .single();
     
     if (memberError) {
-      // チームメンバーの追加に失敗した場合、オファーのステータスを元に戻す
+      // 組織メンバーの追加に失敗した場合、オファーのステータスを元に戻す
       await supabase
         .from('offers')
         .update({ status: 'pending' })

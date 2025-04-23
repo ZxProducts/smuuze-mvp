@@ -5,7 +5,7 @@ import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-// チームの型定義
+// 組織の型定義
 interface Team {
   id: string;
   name: string;
@@ -26,7 +26,7 @@ export function TeamSelector({ teams, selectedTeamId, onTeamChange }: TeamSelect
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="flex items-center gap-2">
-            {selectedTeam?.name || 'チームを選択'}
+            {selectedTeam?.name || '組織を選択'}
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

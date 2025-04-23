@@ -200,13 +200,13 @@ export function TasksContent() {
         if (projectsResponse.projects) {
           setProjects(projectsResponse.projects)
           
-          // 各プロジェクトのタスクとチームメンバーを取得
+          // 各プロジェクトのタスクと組織メンバーを取得
           const projectsWithTasksPromises = projectsResponse.projects.map(async (project) => {
             try {
               // タスク一覧を取得
               const tasksResponse = await get<TasksResponse>(`/api/tasks?projectId=${project.id}`)
               
-              // チームメンバー一覧を取得
+              // 組織メンバー一覧を取得
               const membersResponse = await get<TeamMembersResponse>(`/api/teams/${project.team_id}/members`)
               
               // 現在のユーザーの権限を確認
@@ -255,7 +255,7 @@ export function TasksContent() {
           
           setTasks(allTasks)
           
-          // 全てのチームメンバーを結合（重複を排除）
+          // 全ての組織メンバーを結合（重複を排除）
           const allMembersWithDuplicates = projectsWithTasks.flatMap(p => p.members)
           // user_idをキーとして使用して重複を排除
           const uniqueMembers = Array.from(
