@@ -72,6 +72,7 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     invoice_notes: string;
   } | null>(null);
   const [paymentDate, setPaymentDate] = useState<Date>(new Date());
+  const [invoiceNumber, setInvoiceNumber] = useState<string>('');
 
   // 現在のユーザーIDを取得
   useEffect(() => {
@@ -97,8 +98,13 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     
     getCurrentUser();
 
-    // 支払い期限を翌月末に設定
-    setPaymentDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1));
+    // 支払い期限を翌月末に設定（日本時間）
+    const currentJapanTime = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const nextJapanMonth = new Date(currentJapanTime);
+    nextJapanMonth.setMonth(nextJapanMonth.getMonth() + 1);
+    nextJapanMonth.setDate(0);
+    const paymentJapanTime = new Date(nextJapanMonth.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
+    setPaymentDate(paymentJapanTime);
   }, []);
 
   const handleRemoveMember = async () => {
@@ -248,7 +254,6 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     const teamJson = await teamData.json();
 
     const paymentMember = teamJson.team.team_members.filter((member: any) => member.user_id === memberId)[0];
-    console.log(paymentMember);
 
     // 請求先情報
     const paymentInfo = {
@@ -299,9 +304,10 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     };
 
     const fileName = `【請求書】${member.profiles.full_name}：${format(dateRange.from, 'yyyy/MM/dd')}-${format(dateRange.to, 'yyyy/MM/dd')}`;
-    console.log(dateRange.from.toString());
-    console.log(dateRange.to.toString());
-    console.log(paymentDate.toString());
+
+    console.log("=======================");
+    console.log(reportData);
+
     await fetch('/api/export/invoice/', {
       method: 'POST',
       body: JSON.stringify({
@@ -322,6 +328,8 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
         paymentBankInfo: paymentBankInfo,
         // 支払い期限
         paymentDate: paymentDate.toISOString(),
+        // 請求番号
+        invoiceNumber: invoiceNumber,
       }),
     }).then((response) => {
       response.blob().then((blob) => {
@@ -484,6 +492,8 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
         onExportInvoice={() => handleExportInvoice(member.user_id)}
         paymentDate={paymentDate}
         setPaymentDate={setPaymentDate}
+        invoiceNumber={invoiceNumber}
+        setInvoiceNumber={setInvoiceNumber}
       />
     </>
   );

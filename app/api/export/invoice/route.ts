@@ -23,6 +23,7 @@ interface InvoiceData {
     postalCode: string;
     email: string;
   };
+  invoiceNumber: string;
   from: string;
   to: string;
   billingBankInfo: {
@@ -92,6 +93,13 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
 
     doc.on('data', buffers.push.bind(buffers));
 
+    const invoiceFrom = new Date(invoiceData.from).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const invoiceTo = new Date(invoiceData.to).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    // 請求日
+    const billingDate = invoiceTo;
+    // 支払期限
+    const paymentDate = new Date(invoiceData.paymentDate).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+
     // タイトル
     doc.fontSize(24)
       .text('請求書', { align: 'center' });
@@ -129,15 +137,10 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
       })
       .moveDown(1)
       .fontSize(14)
-      .text('業務委託料（' + format(new Date(invoiceData.from), 'yyyy/MM/dd') + '-' + format(new Date(invoiceData.to), 'yyyy/MM/dd') + '）', {
+      .text('業務委託料（' + format(invoiceFrom, 'yyyy/MM/dd') + '-' + format(invoiceTo, 'yyyy/MM/dd') + '）', {
         align: 'left',
       })
       .moveDown(1);
-
-    // 請求日（yyyy/MM/ddの形式）
-    const billingDate = format(new Date(invoiceData.to), 'yyyy/MM/dd');
-    // 支払期限はinvoiceData.toの翌月末（yyyy/MM/ddの形式）
-    const paymentDate = format(new Date(invoiceData.paymentDate), 'yyyy/MM/dd');
 
     // 右側の情報（請求元）
     doc.fontSize(12)
@@ -149,11 +152,11 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
       .moveDown(0.5)
       .text('メール: ' + invoiceData.paymentInfo.email || '', 300)
       .moveDown(1)
-      .text('請求書番号: ' + format(new Date(), 'yyyyMMdd-HHmmss'), 300)
+      .text('請求書番号: ' + invoiceData.invoiceNumber || format(billingDate, 'yyyyMMdd-HHmmss'), 300)
       .moveDown(0.3)
-      .text('請求日: ' + billingDate || '', 300)
+      .text('請求日: ' + format(billingDate, 'yyyy/MM/dd') || '', 300)
       .moveDown(0.3)
-      .text('お支払期限: ' + paymentDate || '', 300);
+      .text('お支払期限: ' + format(paymentDate, 'yyyy/MM/dd') || '', 300);
 
     // 金額テーブルのヘッダー
     doc.moveDown(1);
