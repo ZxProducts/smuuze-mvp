@@ -20,6 +20,8 @@ interface ExportInvoiceDialogProps {
   onExportInvoice: () => void;
   paymentDate: Date;
   setPaymentDate: (paymentDate: Date) => void;
+  invoiceNumber: string;
+  setInvoiceNumber: (invoiceNumber: string) => void;
 }
 
 export function ExportInvoiceDialog({
@@ -30,7 +32,9 @@ export function ExportInvoiceDialog({
   setDateRange,
   onExportInvoice,
   paymentDate,
-  setPaymentDate
+  setPaymentDate,
+  invoiceNumber,
+  setInvoiceNumber
 }: ExportInvoiceDialogProps) {
   // 日付選択の状態を管理（none: 未選択、start-selected: 開始日選択済み）
   const [dateSelectionState, setDateSelectionState] = useState<'none' | 'start-selected'>('none')
@@ -83,10 +87,9 @@ export function ExportInvoiceDialog({
               mode="single"
               selected={tempStartDate || undefined}
               onSelect={(date: Date | undefined) => {
-                console.log(date);
                 if (date) {
                   // 日本時間に変換
-                  const japanTime = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+                  const japanTime = new Date(date.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
                   handleDateSelect(japanTime);
                 } else {
                   handleDateSelect(undefined);
@@ -117,11 +120,27 @@ export function ExportInvoiceDialog({
               value={new Date(paymentDate.toString()).toISOString().split('T')[0]}
               onChange={(e) => {
                 const date = new Date(e.target.value);
-                const japanTime = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+                const japanTime = new Date(date.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
                 setPaymentDate(japanTime);
               }}
               className="border border-gray-300 rounded-md p-2"
             />
+          </div>
+          <div className='my-2'>
+            <div className="flex items-center gap-2 mb-1">
+              <label htmlFor="paymentDate">請求番号</label>
+              <input
+                type="text"
+                id="invoiceNumber"
+                placeholder="請求番号を入力してください"
+                value={invoiceNumber}
+                onChange={(e) => {
+                  setInvoiceNumber(e.target.value);
+                }}
+                className="border border-gray-300 rounded-md p-2"
+              />
+            </div>
+            <p className='text-sm text-gray-500'>請求番号が未入力の場合は、請求書の作成時に自動で生成されます。</p>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
