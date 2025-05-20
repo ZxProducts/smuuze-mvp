@@ -1127,25 +1127,16 @@ function TimeEntryItem({
   // タイムエントリーを複製
   const duplicateEntry = async () => {
     try {
-      const now = new Date();
       const startTime = new Date(entry.start_time);
       const endTime = entry.end_time ? new Date(entry.end_time) : null;
-      
-      // 開始時間と終了時間の差分を計算
-      const duration = endTime ? endTime.getTime() - startTime.getTime() : 0;
-      
-      // 新しい開始時間を現在時刻に設定
-      const newStartTime = now;
-      // 新しい終了時間を計算（同じ時間間隔を維持）
-      const newEndTime = endTime ? new Date(now.getTime() + duration) : null;
       
       // タイムエントリーをAPIで作成
       const payload = {
         description: entry.description,
         projectId: entry.project_id,
         taskId: entry.task_id,
-        startTime: newStartTime.toISOString(),
-        endTime: newEndTime?.toISOString() || null,
+        startTime: startTime.toISOString(),
+        endTime: endTime?.toISOString() || null,
       };
       
       const response = await post<TimeEntryResponse>("/api/time-entries", payload);
