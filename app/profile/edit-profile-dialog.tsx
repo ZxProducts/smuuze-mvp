@@ -25,6 +25,7 @@ interface Profile {
   bank_branch_name?: string;
   bank_branch_code?: string;
   invoice_notes?: string;
+  invoice_number?: string;
 }
 
 interface EditProfileDialogProps {
@@ -70,6 +71,7 @@ export default function EditProfileDialog({ isOpen, onClose, profile, onUpdate }
           bank_branch_name: formData.bank_branch_name,
           bank_branch_code: formData.bank_branch_code,
           invoice_notes: formData.invoice_notes,
+          invoice_number: formData.invoice_number,
         }),
       });
       
@@ -132,6 +134,18 @@ export default function EditProfileDialog({ isOpen, onClose, profile, onUpdate }
                   readOnly
                 />
                 <p className="text-xs text-gray-500">メールアドレスは変更できません</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="invoice_number">請求書番号</Label>
+                <Input
+                  id="invoice_number"
+                  name="invoice_number"
+                  value={formData.invoice_number || ''}
+                  onChange={handleChange}
+                  placeholder="例: INV-2024-001"
+                />
+                <p className="text-xs text-gray-500">請求書に表示される番号を設定できます</p>
               </div>
             </TabsContent>
             

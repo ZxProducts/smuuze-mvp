@@ -15,6 +15,7 @@ interface ProfileUpdateData {
   bank_branch_name?: string;
   bank_branch_code?: string;
   invoice_notes?: string;
+  invoice_number?: string;
 }
 
 // 現在のユーザー情報を取得
@@ -97,8 +98,9 @@ export async function PUT(request: NextRequest) {
     if (data.bank_branch_name !== undefined) updateData.bank_branch_name = data.bank_branch_name;
     if (data.bank_branch_code !== undefined) updateData.bank_branch_code = data.bank_branch_code;
     
-    // 請求書備考
+    // 請求書関連情報
     if (data.invoice_notes !== undefined) updateData.invoice_notes = data.invoice_notes;
+    if (data.invoice_number !== undefined) updateData.invoice_number = data.invoice_number;
     
     // プロフィールを更新
     const { data: updatedProfile, error } = await supabase
