@@ -3,7 +3,7 @@
 import * as React from "react"
 import { format, formatDistance, formatDuration, intervalToDuration } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { Play, Square, Edit, Trash2, Plus } from "lucide-react"
+import { Play, Square, Edit, Trash2, Plus, Copy, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -1124,6 +1124,42 @@ function TimeEntryItem({
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   }
 
+  // タイムエントリーを複製
+  const duplicateEntry = async () => {
+    try {
+      const now = new Date();
+      const startTime = new Date(entry.start_time);
+      const endTime = entry.end_time ? new Date(entry.end_time) : null;
+      
+      // 開始時間と終了時間の差分を計算
+      const duration = endTime ? endTime.getTime() - startTime.getTime() : 0;
+      
+      // 新しい開始時間を現在時刻に設定
+      const newStartTime = now;
+      // 新しい終了時間を計算（同じ時間間隔を維持）
+      const newEndTime = endTime ? new Date(now.getTime() + duration) : null;
+      
+      // タイムエントリーをAPIで作成
+      const payload = {
+        description: entry.description,
+        projectId: entry.project_id,
+        taskId: entry.task_id,
+        startTime: newStartTime.toISOString(),
+        endTime: newEndTime?.toISOString() || null,
+      };
+      
+      const response = await post<TimeEntryResponse>("/api/time-entries", payload);
+      
+      if (response.timeEntry) {
+        // ページをリロードして新しいエントリーを表示
+        window.location.reload();
+      }
+    } catch (error: any) {
+      console.error("タイムエントリーの複製に失敗しました", error);
+      alert("タイムエントリーの複製に失敗しました");
+    }
+  }
+
   return (
     <div className="flex flex-col p-3 bg-white rounded border">
       <div className="flex items-center justify-between">
@@ -1138,6 +1174,9 @@ function TimeEntryItem({
             {formatTimeRange(entry.start_time, entry.end_time)}
           </div>
           <div className="font-mono">{formatDurationDisplay(entry.start_time, entry.end_time)}</div>
+          <Button variant="ghost" size="icon" onClick={duplicateEntry}>
+            <Copy className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={onEdit}>
             <Edit className="h-4 w-4" />
           </Button>
