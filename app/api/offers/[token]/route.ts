@@ -9,28 +9,38 @@ export async function GET(
 ) {
   try {
     const supabase = await createServerSupabaseClient();
-    const token = params.token;
+    let token = params.token;
+    
+    try {
+      // URLエンコードされている可能性があるのでデコード
+      token = decodeURIComponent(token);
+    } catch (e) {
+      // デコードに失敗した場合は元のトークンを使用
+      console.log('URLデコード失敗、元のトークンを使用します');
+    }
     
     console.log('オファー取得リクエスト: token=', token.substring(0, 10) + '...');
     
-    // トークンが署名付きの場合は検証して本来のトークンを取得
+    // トークンの形式を確認して署名付きトークンを処理
     let tokenToUse = token;
     
-    if (token.includes('.') || token.includes('+') || token.includes('/') || token.includes('=')) {
-      // Base64らしい形式の場合、署名付きトークンとして検証
+    // Base64エンコードされているかを確認
+    const base64Pattern = /^[A-Za-z0-9+/=]+$/;
+    const isBase64 = base64Pattern.test(token);
+    
+    if (isBase64) {
+      // 署名付きトークンとして検証を試みる
       console.log('署名付きトークンの検証を実行');
       const verificationResult = verifyInviteToken(token);
       
-      if (!verificationResult.valid) {
-        console.error('トークン検証失敗:', verificationResult.error);
-        return NextResponse.json(
-          { error: verificationResult.error },
-          { status: 400 }
-        );
+      if (verificationResult.valid) {
+        // 検証成功した場合は元のトークンを使用
+        tokenToUse = verificationResult.token as string;
+        console.log('トークン検証成功: 検証されたトークン=', tokenToUse.substring(0, 10) + '...');
+      } else {
+        // Base64形式だが検証失敗の場合はそのまま使用（通常のトークンかもしれない）
+        console.log('署名付きトークンの検証失敗、元のトークンを使用します');
       }
-      
-      tokenToUse = verificationResult.token as string;
-      console.log('トークン検証成功: 実際のトークン=', tokenToUse.substring(0, 10) + '...');
     }
     
     // オファーを取得
@@ -46,13 +56,21 @@ export async function GET(
       `)
       .eq('token', tokenToUse)
       .eq('status', 'pending')
-      .single();
+      .maybeSingle();
     
     if (offerError) {
       console.error('オファー取得エラー:', offerError.message);
       return NextResponse.json(
         { error: offerError.message },
         { status: 400 }
+      );
+    }
+    
+    if (!offer) {
+      console.error('オファーが見つかりません: token=', tokenToUse.substring(0, 10) + '...');
+      return NextResponse.json(
+        { error: '有効な招待が見つかりません' },
+        { status: 404 }
       );
     }
     
@@ -85,28 +103,38 @@ export async function POST(
     }
     
     const userId = session.user.id;
-    const token = params.token;
+    let token = params.token;
+    
+    try {
+      // URLエンコードされている可能性があるのでデコード
+      token = decodeURIComponent(token);
+    } catch (e) {
+      // デコードに失敗した場合は元のトークンを使用
+      console.log('URLデコード失敗、元のトークンを使用します');
+    }
     
     console.log('オファー承諾リクエスト: token=', token.substring(0, 10) + '...', 'user=', userId);
     
-    // トークンが署名付きの場合は検証して本来のトークンを取得
+    // トークンの形式を確認して署名付きトークンを処理
     let tokenToUse = token;
     
-    if (token.includes('.') || token.includes('+') || token.includes('/') || token.includes('=')) {
-      // Base64らしい形式の場合、署名付きトークンとして検証
+    // Base64エンコードされているかを確認
+    const base64Pattern = /^[A-Za-z0-9+/=]+$/;
+    const isBase64 = base64Pattern.test(token);
+    
+    if (isBase64) {
+      // 署名付きトークンとして検証を試みる
       console.log('署名付きトークンの検証を実行');
       const verificationResult = verifyInviteToken(token);
       
-      if (!verificationResult.valid) {
-        console.error('トークン検証失敗:', verificationResult.error);
-        return NextResponse.json(
-          { error: verificationResult.error },
-          { status: 400 }
-        );
+      if (verificationResult.valid) {
+        // 検証成功した場合は元のトークンを使用
+        tokenToUse = verificationResult.token as string;
+        console.log('トークン検証成功: 検証されたトークン=', tokenToUse.substring(0, 10) + '...');
+      } else {
+        // Base64形式だが検証失敗の場合はそのまま使用（通常のトークンかもしれない）
+        console.log('署名付きトークンの検証失敗、元のトークンを使用します');
       }
-      
-      tokenToUse = verificationResult.token as string;
-      console.log('トークン検証成功: 実際のトークン=', tokenToUse.substring(0, 10) + '...');
     }
     
     // オファーを取得
@@ -129,7 +157,7 @@ export async function POST(
       console.error('オファーが見つかりません: token=', tokenToUse.substring(0, 10) + '...');
       return NextResponse.json(
         { error: '有効な招待が見つかりません' },
-        { status: 400 }
+        { status: 404 }
       );
     }
     
@@ -235,22 +263,30 @@ export async function DELETE(
     }
     
     const userId = session.user.id;
-    const token = params.token;
+    let token = params.token;
     
-    // トークンが署名付きの場合は検証して本来のトークンを取得
+    try {
+      // URLエンコードされている可能性があるのでデコード
+      token = decodeURIComponent(token);
+    } catch (e) {
+      // デコードに失敗した場合は元のトークンを使用
+    }
+    
+    // トークンの形式を確認して署名付きトークンを処理
     let tokenToUse = token;
     
-    if (token.includes('.') || token.includes('+') || token.includes('/') || token.includes('=')) {
+    // Base64エンコードされているかを確認
+    const base64Pattern = /^[A-Za-z0-9+/=]+$/;
+    const isBase64 = base64Pattern.test(token);
+    
+    if (isBase64) {
+      // 署名付きトークンとして検証を試みる
       const verificationResult = verifyInviteToken(token);
       
-      if (!verificationResult.valid) {
-        return NextResponse.json(
-          { error: verificationResult.error },
-          { status: 400 }
-        );
+      if (verificationResult.valid) {
+        // 検証成功した場合は元のトークンを使用
+        tokenToUse = verificationResult.token as string;
       }
-      
-      tokenToUse = verificationResult.token as string;
     }
     
     // オファーを取得
@@ -271,7 +307,7 @@ export async function DELETE(
     if (!offer) {
       return NextResponse.json(
         { error: '有効な招待が見つかりません' },
-        { status: 400 }
+        { status: 404 }
       );
     }
     

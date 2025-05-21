@@ -51,6 +51,7 @@ export default function AcceptInvitePage() {
           console.log('verifyResponseの内容:', respData.error || '成功');
         } catch (e) {
           console.error('JSONパースエラー:', e, 'レスポンステキスト:', respText);
+          throw new Error('サーバーからの応答を解析できませんでした');
         }
         
         if (!verifyResponse.ok) {
@@ -76,7 +77,8 @@ export default function AcceptInvitePage() {
         }
         
         // 招待を承諾するAPIを呼び出し
-        const acceptResponse = await fetch(`/api/offers/${token}`, {
+        console.log('招待承諾処理の開始');
+        const acceptResponse = await fetch(`/api/offers/${encodeURIComponent(token)}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -84,8 +86,17 @@ export default function AcceptInvitePage() {
         });
         
         if (!acceptResponse.ok) {
-          const data = await acceptResponse.json();
-          throw new Error(data.error || '招待の承諾に失敗しました');
+          const acceptRespText = await acceptResponse.text();
+          let acceptData;
+          try {
+            acceptData = JSON.parse(acceptRespText);
+          } catch (e) {
+            console.error('承諾レスポンスの解析エラー:', e, 'レスポンステキスト:', acceptRespText);
+            throw new Error('招待の承諾処理でエラーが発生しました');
+          }
+          throw new Error(acceptData?.error || '招待の承諾に失敗しました');
+        } else {
+          console.log('招待承諾成功');
         }
         
         setSuccess(true);
@@ -96,6 +107,7 @@ export default function AcceptInvitePage() {
           router.push(`/team/${teamId}`);
         }, 5000);
       } catch (error: any) {
+        console.error('招待処理エラー:', error.message);
         setError(error.message || '招待の処理中にエラーが発生しました');
         setLoading(false);
       }

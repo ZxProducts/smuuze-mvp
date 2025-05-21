@@ -97,10 +97,18 @@ export async function updateSession(request: NextRequest) {
       '/login',
       '/register',
       '/reset-password',
-      '/update-password'
+      '/update-password',
+      '/invite'  // 招待ページは認証不要に追加
     ];
     
-    const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path));
+    // URLパラメータを確認して招待トークンが含まれているかチェック
+    const url = request.nextUrl.clone();
+    const isInvitePath = url.pathname.startsWith('/invite');
+    const hasInviteToken = url.searchParams.has('token');
+    
+    // 招待ページへのアクセスかどうかを確認
+    const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path)) || 
+                         (isInvitePath && hasInviteToken);
     
     if (!user && !isPublicPath) {
       // API ルートの場合は JSON エラーレスポンスを返す

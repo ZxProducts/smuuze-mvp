@@ -28,23 +28,25 @@ export function verifyInviteToken(signedToken: string): {
   try {
     console.log('署名付きトークンの検証開始:', signedToken.substring(0, 15) + '...');
     
+    // Base64デコードを試みる前に、URLデコードを行う（URLエンコードされている可能性がある）
+    let tokenToProcess = signedToken;
+    try {
+      // URLエンコードされているかもしれないのでデコード
+      tokenToProcess = decodeURIComponent(signedToken);
+      console.log('URLデコード成功:', tokenToProcess.substring(0, 15) + '...');
+    } catch (urlDecodeError) {
+      // URLデコードに失敗した場合はそのまま使用
+      console.log('URLデコードは必要ありません');
+    }
+    
     let decoded: string;
     try {
-      decoded = Buffer.from(signedToken, 'base64').toString('utf-8');
-      console.log('デコード成功:', decoded.substring(0, 20) + '...');
+      // Base64デコード
+      decoded = Buffer.from(tokenToProcess, 'base64').toString('utf-8');
+      console.log('Base64デコード成功:', decoded.substring(0, 20) + '...');
     } catch (error) {
       console.error('Base64デコードエラー:', error);
-      
-      // URLエンコードされている可能性があるため、デコードを試みる
-      try {
-        const decodedUrl = decodeURIComponent(signedToken);
-        console.log('URLデコード試行:', decodedUrl.substring(0, 15) + '...');
-        decoded = Buffer.from(decodedUrl, 'base64').toString('utf-8');
-        console.log('URLデコード後のBase64デコード成功:', decoded.substring(0, 20) + '...');
-      } catch (nestedError) {
-        console.error('URLデコード後のBase64デコードも失敗:', nestedError);
-        return { valid: false, error: 'トークンのデコードに失敗しました' };
-      }
+      return { valid: false, error: 'トークンのデコードに失敗しました' };
     }
     
     const parts = decoded.split(':');
