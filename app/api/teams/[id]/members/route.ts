@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { sendInvitationEmail } from '@/lib/email';
+import { generateInviteToken, generateInviteLink, signInviteToken, getBaseUrl } from '@/lib/invite-utils';
 
 // 組織メンバーの取得
 export async function GET(
@@ -138,6 +140,20 @@ export async function POST(
       );
     }
     
+    // 組織情報を取得（メール送信用）
+    const { data: team, error: teamError } = await supabase
+      .from('teams')
+      .select('name')
+      .eq('id', teamId)
+      .single();
+      
+    if (teamError) {
+      return NextResponse.json(
+        { error: teamError.message },
+        { status: 400 }
+      );
+    }
+    
     // ユーザーが存在する場合は直接組織メンバーに追加
     if (user) {
       // 既に組織メンバーかどうかを確認
@@ -196,8 +212,11 @@ export async function POST(
       return NextResponse.json({ member });
     } else {
       // ユーザーが存在しない場合はオファーを作成
-      // ランダムなトークンを生成
-      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      // セキュアなトークンを生成
+      const shortInviteToken = generateInviteToken();
+
+      // 署名付きトークンを一度だけ生成
+      const signedInviteToken = signInviteToken(shortInviteToken, email);
       
       const { data: offer, error: offerError } = await supabase
         .from('offers')
@@ -209,7 +228,7 @@ export async function POST(
           weekly_work_days: weeklyWorkDays || 5,
           meeting_included: meetingIncluded !== undefined ? meetingIncluded : true,
           notes: notes || null,
-          token,
+          token: signedInviteToken,
           created_by: userId,
         })
         .select()
@@ -222,9 +241,26 @@ export async function POST(
         );
       }
       
-      // TODO: メール送信処理
+      // ★ 招待リンクを手動で組み立てる
+      const baseUrl = getBaseUrl();
+      const invitationLink = `${baseUrl}/invite?token=${encodeURIComponent(signedInviteToken)}&teamId=${teamId}`;
       
-      return NextResponse.json({ offer });
+      // SendGridを使って招待メールを送信
+      const emailResult = await sendInvitationEmail(
+        email,
+        team.name,
+        invitationLink
+      );
+      
+      if (!emailResult.success) {
+        console.error('招待メール送信エラー:', emailResult.error);
+        // メール送信に失敗した場合でもオファーは作成する（管理者が再送信できるようにするため）
+      }
+      
+      return NextResponse.json({ 
+        offer,
+        emailSent: emailResult.success 
+      });
     }
   } catch (error: any) {
     return NextResponse.json(
