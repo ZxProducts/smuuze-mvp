@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function InvitePage() {
+function InvitePageComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -256,43 +257,31 @@ export default function InvitePage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={8}
                   />
                 </div>
-                
                 <Button type="submit" className="w-full" disabled={verifying}>
-                  {verifying ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      アカウント作成中...
-                    </>
-                  ) : (
-                    '招待を受け入れる'
-                  )}
+                  {verifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'アカウントを作成して招待を受ける'}
                 </Button>
               </form>
-              
               <div className="mt-4 text-center text-sm">
-                <p>
-                  すでにアカウントをお持ちですか？{' '}
-                  <Link 
-                    href={`/login?redirect=${encodeURIComponent(redirectUrl)}`}
-                    className="text-primary hover:underline"
-                  >
+                すでにアカウントをお持ちですか？ {
+                  <Link href={`/auth/login?redirect=${redirectUrl}`} className="underline">
                     ログイン
                   </Link>
-                </p>
+                }
               </div>
             </>
-          )}
-          {isAuthenticated && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="ml-2">招待受け入れページにリダイレクト中...</span>
-            </div>
           )}
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function InvitePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-primary" /><span className="ml-2">読み込み中...</span></div>}>
+      <InvitePageComponent />
+    </Suspense>
   );
 } 
