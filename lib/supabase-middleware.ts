@@ -98,7 +98,8 @@ export async function updateSession(request: NextRequest) {
       '/register',
       '/reset-password',
       '/update-password',
-      '/invite'  // 招待ページは認証不要に追加
+      '/invite',  // 招待ページは認証不要に追加
+      '/api/offers/verify'  // 招待トークン検証APIを認証不要に追加
     ];
     
     // URLパラメータを確認して招待トークンが含まれているかチェック
@@ -106,9 +107,21 @@ export async function updateSession(request: NextRequest) {
     const isInvitePath = url.pathname.startsWith('/invite');
     const hasInviteToken = url.searchParams.has('token');
     
+    // ★デバッグログ追加
+    console.log('Checking public path status:', {
+      pathname: request.nextUrl.pathname,
+      isInvitePath,
+      hasInviteToken,
+      startsWithInvite: request.nextUrl.pathname.startsWith('/invite'),
+      publicPathsIncludes: publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
+    });
+
     // 招待ページへのアクセスかどうかを確認
     const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path)) || 
                          (isInvitePath && hasInviteToken);
+
+    // ★デバッグログ追加
+    console.log('isPublicPath evaluated to:', isPublicPath);
     
     if (!user && !isPublicPath) {
       // API ルートの場合は JSON エラーレスポンスを返す

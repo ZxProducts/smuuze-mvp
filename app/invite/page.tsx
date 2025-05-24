@@ -32,42 +32,11 @@ export default function InvitePage() {
       setLoading(false);
       return;
     }
-    
-    async function initialize() {
-      try {
-        // まず認証状態を確認
-        const sessionResponse = await fetch('/api/auth/session');
-        const sessionData = await sessionResponse.json();
-        setIsAuthenticated(sessionData.authenticated);
-        
-        // トークン検証は認証状態に関わらず実行
-        await verifyToken();
-        
-        // 認証済みの場合は承認ページへリダイレクト
-        if (sessionData.authenticated) {
-          // この時点でtokenとteamIdは存在することが保証されている
-          const safeToken = token as string;
-          const safeTeamId = teamId as string;
-          router.push(`/invite/accept?token=${encodeURIComponent(safeToken)}&teamId=${safeTeamId}`);
-        }
-      } catch (error) {
-        console.error('初期化エラー:', error);
-        // 認証エラーがあってもトークン検証は続行
-        try {
-          await verifyToken();
-        } catch (verifyError) {
-          console.error('トークン検証エラー:', verifyError);
-          setError(verifyError instanceof Error ? verifyError.message : '招待の検証に失敗しました');
-          setLoading(false);
-        }
-      }
-    }
-    
-    // トークン検証
+
+    // トークン検証 (先に定義しておく)
     async function verifyToken() {
       try {
-        // この時点でtokenとteamIdはnullでないことが確認されている
-        const safeToken = token as string;
+        const safeToken = token!;
         console.log('トークン検証リクエスト開始:', safeToken.substring(0, 15) + '...');
         const response = await fetch(`/api/offers/verify?token=${encodeURIComponent(safeToken)}`);
         
@@ -84,14 +53,65 @@ export default function InvitePage() {
           throw new Error('招待情報が取得できませんでした');
         }
         
-        setOfferData(responseData.offer);
-        setEmail(responseData.email);
-        setLoading(false);
+        setOfferData(responseData.offer); // offerData をここでセット
+        setEmail(responseData.email); // email をここでセット
+        // setLoading(false); // ローディングは initialize の最後で行う
+        return responseData; // 検証結果を返す
       } catch (error: any) {
         console.error('招待検証処理エラー:', error);
-        setError(error.message || '招待の検証に失敗しました');
-        setLoading(false);
-        throw error; // 呼び出し元で処理できるように再スロー
+        // setError(error.message || '招待の検証に失敗しました');
+        // setLoading(false);
+        throw error; // 呼び出し元でエラー処理とローディング制御を行う
+      }
+    }
+    
+    async function initialize() {
+      try {
+        // 1. トークン検証を先に行う
+        const offerVerificationData = await verifyToken(); 
+        // offerData と email (招待されたメールアドレス) がセットされる
+        // offerVerificationData.offer と offerVerificationData.email が使える
+
+        // 2. 認証状態を確認
+        const sessionResponse = await fetch('/api/auth/session');
+        const sessionData = await sessionResponse.json();
+        const currentUserEmail = sessionData.user?.email; // 現在ログイン中のユーザーのメール
+        setIsAuthenticated(sessionData.authenticated);
+
+        if (sessionData.authenticated) {
+          // 3. 認証済みの場合の処理
+          // ★ 常に登録フォームを表示するため、認証状態に関わらず setIsAuthenticated(false) を設定
+          setIsAuthenticated(false);
+          // setEmail は verifyToken でセットされているため、ここでは不要
+          // ログイン中のメールと招待メールが異なる場合のエラー表示も、
+          // 登録フォームでメールアドレスが固定されていればユーザーは気づけるため、
+          // ここでは不要かもしれません（必要であれば残します）
+          // if (offerVerificationData.offer && offerVerificationData.email !== currentUserEmail) {
+          //   console.warn(`ログイン中のユーザー (${currentUserEmail}) と招待メールの宛先 (${offerVerificationData.email}) が異なります。`);
+          // }
+
+          // 元のロジック:
+          // if (offerVerificationData.offer && offerVerificationData.email === currentUserEmail) {
+          //   // ★ 招待メールアドレスとログイン中ユーザーのメールが一致
+          //   router.push(`/invite/accept?token=${encodeURIComponent(token!)}&teamId=${teamId!}`);
+          // } else if (offerVerificationData.offer) {
+          //   // ★ 招待メールアドレスとログイン中ユーザーのメールが不一致
+          //   setError(`この招待は ${offerVerificationData.email} 宛ですが、あなたは現在 ${currentUserEmail || '未ログイン'} です。ログアウトして正しいアカウントで再度お試しいただくか、新しいアカウントを作成してください。`);
+          //   setIsAuthenticated(false); // 未認証として扱い、登録フォームを表示させる
+          //   // setEmail(offerVerificationData.email); // フォームのメールアドレスは招待されたもので初期化
+          // } else {
+          //    // offerData がない場合は verifyToken でエラーになっているのでここは通らない想定
+          // }
+        } else {
+          // 4. 未認証の場合 - setEmail は verifyToken 内で行われている
+          // setIsAuthenticated(false) はデフォルトで問題ない
+          // setEmail(offerVerificationData.email); // フォームのメールアドレスは招待されたもので初期化
+        }
+      } catch (error) {
+        console.error('初期化またはトークン検証エラー:', error);
+        setError(error instanceof Error ? error.message : '招待の処理中にエラーが発生しました');
+      } finally {
+        setLoading(false); // 全ての処理の最後にローディングを終了
       }
     }
     

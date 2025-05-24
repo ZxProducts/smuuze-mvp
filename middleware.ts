@@ -65,7 +65,8 @@ export async function middleware(request: NextRequest) {
     '/api/auth/register',
     '/api/auth/reset-password',
     '/api/auth/update-password',
-    '/api/offers'
+    '/api/offers',
+    '/api/offers/verify'
   ];
   
   // 認証が必要なAPIルートかどうかを確認
