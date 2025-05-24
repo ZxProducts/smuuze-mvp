@@ -99,7 +99,8 @@ export async function updateSession(request: NextRequest) {
       '/reset-password',
       '/update-password',
       '/invite',  // 招待ページは認証不要に追加
-      '/api/offers/verify'  // 招待トークン検証APIを認証不要に追加
+      '/api/offers/verify',  // 招待トークン検証APIを認証不要に追加
+      '/auth/callback'  // メール認証後のコールバックを認証不要に追加
     ];
     
     // URLパラメータを確認して招待トークンが含まれているかチェック

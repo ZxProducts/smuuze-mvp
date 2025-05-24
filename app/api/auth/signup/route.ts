@@ -7,8 +7,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerSupabaseClient();
     
     // リクエストボディを取得
-    // emailRedirectBaseUrl はメール認証後にリダイレクトするベースURL (例: https://example.com/auth/callback)
-    const { email, password, fullName, invitationToken, emailRedirectBaseUrl } = await request.json(); 
+    const { email, password, fullName, redirectTo } = await request.json(); 
     
     if (!email || !password || !fullName) {
       return NextResponse.json(
@@ -17,10 +16,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const redirectUrl = new URL(emailRedirectBaseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000/auth/callback');
-    redirectUrl.searchParams.append('email', email);
-    if (invitationToken) {
-      redirectUrl.searchParams.append('invitationToken', invitationToken);
+    // redirectToからトークンとteamIdを抽出
+    let invitationToken = null;
+    let teamId = null;
+    
+    if (redirectTo) {
+      try {
+        const redirectUrl = new URL(redirectTo);
+        invitationToken = redirectUrl.searchParams.get('token');
+        teamId = redirectUrl.searchParams.get('teamId');
+      } catch (e) {
+        console.log('リダイレクトURL解析エラー:', e);
+      }
+    }
+
+    // メール認証後のリダイレクトURLを構築
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const emailRedirectUrl = new URL(`${baseUrl}/auth/callback`);
+    emailRedirectUrl.searchParams.append('email', email);
+    
+    // 招待トークンがある場合は追加
+    if (invitationToken && teamId) {
+      emailRedirectUrl.searchParams.append('invitationToken', invitationToken);
+      emailRedirectUrl.searchParams.append('teamId', teamId);
     }
     
     // ユーザー登録
@@ -28,12 +46,7 @@ export async function POST(request: NextRequest) {
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl.toString(),
-        // 必要に応じて、ユーザーのメタデータとして招待情報を保存することも可能
-        // data: {
-        //   invitation_token: invitationToken,
-        //   full_name: fullName // プロフィール情報は別途作成するので不要かもしれない
-        // }
+        emailRedirectTo: emailRedirectUrl.toString(),
       }
     });
     
@@ -52,8 +65,6 @@ export async function POST(request: NextRequest) {
     }
     
     // プロフィール作成
-    // メール認証前にプロフィールを作成するが、RLSポリシーで制限されている場合は
-    // メール認証後のフロー (例: confirm-invitation API) で作成/更新することも検討
     console.log('Creating profile with user ID:', authData.user.id, 'and email:', email);
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -61,29 +72,23 @@ export async function POST(request: NextRequest) {
         id: authData.user.id,
         full_name: fullName,
         email,
-        role: 'member', // 初期ロール。招待によって変わる可能性も考慮
+        role: 'member',
       });
     
     if (profileError) {
-      // プロフィール作成に失敗した場合、Authユーザーを削除することを検討
-      // await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       console.error('Failed to create profile:', profileError);
       return NextResponse.json(
         { error: `プロフィール作成に失敗しました: ${profileError.message}` },
         { status: 400 }
       );
     }
-
-    // 組織への自動追加処理はここから削除
     
     return NextResponse.json({
       success: true,
       user: {
         id: authData.user.id,
         email: authData.user.email,
-        // session: authData.session // signUp直後はsessionがnullの場合があるので注意
       },
-      // クライアントにメール確認を促すメッセージを返す
       message: '確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。'
     });
   } catch (error: any) {

@@ -130,11 +130,11 @@ export default function InvitePage() {
     
     try {
       // APIを通じてユーザー登録
-      // この時点でtokenとteamIdはnullではないことを確認
       if (!token || !teamId) {
         throw new Error('無効な招待リンクです');
       }
       
+      // 招待受諾ページのURLを作成
       const redirectTo = `${window.location.origin}/invite/accept?token=${encodeURIComponent(token)}&teamId=${teamId}`;
       
       const response = await fetch('/api/auth/signup', {
@@ -155,8 +155,13 @@ export default function InvitePage() {
         throw new Error(data.error || 'アカウント作成に失敗しました');
       }
       
-      // 招待受け入れ処理を実行
-      router.push(`/invite/accept?token=${encodeURIComponent(token)}&teamId=${teamId}`);
+      // 成功メッセージを表示
+      setError('');
+      setVerifying(false);
+      
+      // 成功ページまたはメッセージを表示
+      alert('確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。');
+      
     } catch (error: any) {
       setError(error.message || 'アカウント作成に失敗しました');
       setVerifying(false);
