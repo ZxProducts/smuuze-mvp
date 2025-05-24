@@ -3,7 +3,7 @@ import sgMail from '@sendgrid/mail';
 // SendGrid API設定
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
+} 
 
 // 招待メールの送信
 export async function sendInvitationEmail(
