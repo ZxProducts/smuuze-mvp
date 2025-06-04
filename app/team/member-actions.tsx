@@ -70,9 +70,10 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     bank_account_type: string;
     bank_account_number: string;
     invoice_notes: string;
+    invoice_number: string;
   } | null>(null);
   const [paymentDate, setPaymentDate] = useState<Date>(new Date());
-  const [invoiceNumber, setInvoiceNumber] = useState<string>('');
+  const [invoiceString, setInvoiceString] = useState<string>('');
 
   // 現在のユーザーIDを取得
   useEffect(() => {
@@ -308,6 +309,9 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     console.log("=======================");
     console.log(reportData);
 
+    // インボイス番号（適格請求書発行事業者番号）
+    const invoiceNumber = currentUser?.invoice_number || '';
+
     await fetch('/api/export/invoice/', {
       method: 'POST',
       body: JSON.stringify({
@@ -328,7 +332,9 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
         paymentBankInfo: paymentBankInfo,
         // 支払い期限
         paymentDate: paymentDate.toISOString(),
-        // 請求番号
+        // 請求書文字列
+        invoiceString: invoiceString,
+        // インボイス番号
         invoiceNumber: invoiceNumber,
       }),
     }).then((response) => {
@@ -492,8 +498,8 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
         onExportInvoice={() => handleExportInvoice(member.user_id)}
         paymentDate={paymentDate}
         setPaymentDate={setPaymentDate}
-        invoiceNumber={invoiceNumber}
-        setInvoiceNumber={setInvoiceNumber}
+        invoiceString={invoiceString}
+        setInvoiceString={setInvoiceString}
       />
     </>
   );

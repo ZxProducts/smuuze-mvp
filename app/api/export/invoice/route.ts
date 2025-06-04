@@ -43,6 +43,7 @@ interface InvoiceData {
     notes: string;
   };
   paymentDate: string;
+  invoiceString: string;
 }
 
 export async function POST(request: NextRequest, response: NextResponse): Promise<NextResponse> {
@@ -150,9 +151,11 @@ export async function POST(request: NextRequest, response: NextResponse): Promis
       .moveDown(0.3)
       .text(invoiceData.paymentInfo.address || '', 300)
       .moveDown(0.5)
+      .text('適格請求書発行事業者番号: ' + invoiceData.invoiceNumber || '', 300)
+      .moveDown(0.5)
       .text('メール: ' + invoiceData.paymentInfo.email || '', 300)
       .moveDown(1)
-      .text('請求書番号: ' + invoiceData.invoiceNumber || format(billingDate, 'yyyyMMdd-HHmmss'), 300)
+      .text('請求書番号: ' + invoiceData.invoiceString || format(billingDate, 'yyyyMMdd-HHmmss'), 300)
       .moveDown(0.3)
       .text('請求日: ' + format(billingDate, 'yyyy/MM/dd') || '', 300)
       .moveDown(0.3)
