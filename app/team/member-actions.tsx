@@ -304,7 +304,7 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
       notes: currentUser?.invoice_notes || '',
     };
 
-    const fileName = `【請求書】${teamJson.team.name}御中_：${format(dateRange.from, 'yyyy/MM/dd')}-${format(dateRange.to, 'yyyy/MM/dd')}`;
+    const fileName = `【請求書】${teamJson.team.name}御中：${format(dateRange.from, 'yyyy/MM/dd')}-${format(dateRange.to, 'yyyy/MM/dd')}`;
     
     console.log("=======================");
     console.log(reportData);
