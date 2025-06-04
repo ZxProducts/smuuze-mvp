@@ -103,10 +103,6 @@ export function verifyInviteToken(signedToken: string): {
 
 // ベースURLを取得（環境に応じて）
 export function getBaseUrl(): string {
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL;
   }

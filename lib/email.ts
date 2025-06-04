@@ -33,12 +33,6 @@ export async function sendInvitationEmail(
         <h2>${teamName}に招待されました</h2>
         <p>${teamName}のメンバーとして招待されました。</p>
         <p>以下のリンクをクリックして招待を承認してください：</p>
-        <p style="margin: 20px 0;">
-          <a href="${invitationLink}" style="background-color: #4f46e5; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
-            招待を承認する
-          </a>
-        </p>
-        <p style="color: #666; font-size: 14px;">ボタンが機能しない場合は、以下のURLをコピーしてブラウザに貼り付けてください：</p>
         <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px; border: 1px solid #e0e0e0; font-family: monospace; font-size: 12px; margin-bottom: 15px;">
           ${invitationLink}
         </p>
