@@ -310,7 +310,7 @@ export function MemberActions({ member, teamId, isCurrentUserAdmin, onMemberUpda
     console.log(reportData);
 
     // インボイス番号（適格請求書発行事業者番号）
-    const invoiceNumber = currentUser?.invoice_number || '';
+    const invoiceNumber = paymentMember?.profiles?.invoice_number || '';
 
     await fetch('/api/export/invoice/', {
       method: 'POST',

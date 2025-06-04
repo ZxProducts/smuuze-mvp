@@ -73,7 +73,8 @@ export async function GET(
             prefecture,
             city,
             address1,
-            address2
+            address2,
+            invoice_number
           )
         ),
         projects (
