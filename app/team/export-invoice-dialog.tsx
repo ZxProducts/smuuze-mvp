@@ -20,8 +20,8 @@ interface ExportInvoiceDialogProps {
   onExportInvoice: () => void;
   paymentDate: Date;
   setPaymentDate: (paymentDate: Date) => void;
-  invoiceNumber: string;
-  setInvoiceNumber: (invoiceNumber: string) => void;
+  invoiceString: string;
+  setInvoiceString: (invoiceString: string) => void;
 }
 
 export function ExportInvoiceDialog({
@@ -33,8 +33,8 @@ export function ExportInvoiceDialog({
   onExportInvoice,
   paymentDate,
   setPaymentDate,
-  invoiceNumber,
-  setInvoiceNumber
+  invoiceString,
+  setInvoiceString
 }: ExportInvoiceDialogProps) {
   // 日付選択の状態を管理（none: 未選択、start-selected: 開始日選択済み）
   const [dateSelectionState, setDateSelectionState] = useState<'none' | 'start-selected'>('none')
@@ -131,11 +131,11 @@ export function ExportInvoiceDialog({
               <label htmlFor="paymentDate">請求番号</label>
               <input
                 type="text"
-                id="invoiceNumber"
+                id="invoiceString"
                 placeholder="請求番号を入力してください"
-                value={invoiceNumber}
+                value={invoiceString}
                 onChange={(e) => {
-                  setInvoiceNumber(e.target.value);
+                  setInvoiceString(e.target.value);
                 }}
                 className="border border-gray-300 rounded-md p-2"
               />
