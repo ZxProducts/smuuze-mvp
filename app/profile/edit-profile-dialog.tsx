@@ -137,7 +137,7 @@ export default function EditProfileDialog({ isOpen, onClose, profile, onUpdate }
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="invoice_number">請求書番号</Label>
+                <Label htmlFor="invoice_number">適格請求書番号</Label>
                 <Input
                   id="invoice_number"
                   name="invoice_number"
