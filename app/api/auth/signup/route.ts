@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // メール認証後のリダイレクトURLを構築
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const emailRedirectUrl = new URL(`${baseUrl}/auth/callback`);
     emailRedirectUrl.searchParams.append('email', email);
     
